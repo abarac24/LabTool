@@ -1,26 +1,35 @@
-'''
+"""
 Created on Sep 18, 2014
 
 @author: abarac
-'''
-import TelnetController
-import Device
-import time
+"""
 import tftpy
-import Interface
+
+import TelnetController
+
 
 class Provision:
-    
-    def createProv(self,num,idlink,ssmac,ssip,dict):
-        
+
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def createProv(num,idlink,ssmac,ssip,dict):
+
         #createProv(self,num,idlink,ssmac,ssip,idgroup,idservice,vlangr,vlanser,tftpip)
         #sw=Device.Device().getswversion(num)
+        global i
         servicevlan=dict['servicevlan']
         dlubr=dict['dlubr']
         ulubr=dict['ulubr']
-        serviceid=dict['service']
+        serviceid=len(servicevlan.split(','))
         tftpip=dict['tftp']
-                   
+        modulation=dict['modulation']
+        radiomode=dict['radio']
+        cp=dict['cp']
+        channel=dict['channel']
+        frequency=dict['frequency']
+
         telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = 'admin', password = 'admin', prompt = '#')
         telnet.login()
         count=0
@@ -30,7 +39,6 @@ class Provision:
         vlangrlist=servicevlan.split(',')
         vlanserlist=servicevlan.split(',')
         service_count=160
-        grp_count=128
         for i in range (4,idlink+4,1):
             ii=str(i)
             cmd= cmd+'new link '+ii+'\n' \
@@ -39,16 +47,16 @@ class Provision:
                  'set linkmode '+ii+' mimoab'+'\n' \
                  'set dlrate '+ii+' '+dlubr+'\n' \
                  'set ulrate '+ii+' '+ulubr+'\n' \
-                 'set adaptmod '+ii+' on'+'\n' \
+                 'set adaptmod '+ii+' '+modulation+'\n' \
                  'set dlminrate '+ii+ ' 0'+'\n' \
                  'set ulminrate '+ii+ ' 0'+'\n' \
                  'set ldlpir '+ii+' 100000'+'\n' \
                  'set lulpir '+ii+' 100000'+'\n' \
-                 'set lrfmode '+ii+' auto'+'\n' \
+                 'set lrfmode '+ii+' '+'auto'+'\n' \
                  'set lautoscan '+ii+' off'+'\n' \
                  'set ltimeautoscan '+ii+' 600'+'\n' \
                  'set lstickytime '+ii+' 15'+'\n' \
-                 'enable '+ii+'\n' 
+                 'enable '+ii+'\n'
             count+=1
         #telnet.run_command(cmd,0)
 
@@ -75,7 +83,7 @@ class Provision:
                     'set grpdot1p5 '+ii+' 2'+'\n' \
                     'set grpdot1p6 '+ii+' 3'+'\n' \
                     'set grpdot1p7 '+ii+' 3'+'\n' \
-                    'enable ' +ii+'\n' 
+                    'enable ' +ii+'\n'
             #telnet.run_command(cmdgroup,0)
 
             count+=1
@@ -85,7 +93,7 @@ class Provision:
             grp_count=128
             for i in range (service_count ,serviceid+service_count,1):
                 ii=str(i)
-                
+
                 cmdservice=cmdservice+'new service ' +ii+'\n' \
                         'set idname '+ii+' Service'+ii+'\n' \
                         'set conlid '+ii+' '+str(linkid)+'\n' \
@@ -111,17 +119,21 @@ class Provision:
                 grp_count+=1
                 count+=1
             service_count=i+1
-        cmdlog= cmd+cmdgroup+cmdservice+'save config'+'\n'
+        aux_command= channel+ '\n' \
+                     +frequency+'\n' \
+                     +cp+'\n' \
+                     +radiomode+'\n'
+        cmdlog= cmd+cmdgroup+cmdservice+aux_command+'save config'+'\n'
         log = open("log.cfg", "w")
         log.write(cmdlog)
         log.close()
-        client = tftpy.TftpClient(tftpip, 69)
+        '''client = tftpy.TftpClient(tftpip, 69)
         client.upload('log.cfg', 'log.cfg')
-        telnet.run_command('load script '+tftpip+' log.cfg',0)
+        telnet.run_command('load script '+tftpip+' log.cfg',0)'''
         #telnet.run_command('save config',0)
         #telnet.run_command(cmd,0)
         #telnet.run_command('logout',1)
-        
+
         telnet.logout()
             
         
