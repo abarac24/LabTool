@@ -116,10 +116,11 @@ class MyFrame(wx.Frame):
         self.tftp = wx.TextCtrl(self.notebook_2_pane_2, value="172.16.0.215", pos=(250, 30), size=(140,-1),style=wx.TE_PROCESS_ENTER | wx.TE_PROCESS_TAB)
         '''self.lblname = wx.StaticText(self.notebook_2_pane_2, label="Vlans :", pos=(400,30))
         self.groupvlan = wx.TextCtrl(self.notebook_2_pane_2, value="200,300", pos=(450, 30), size=(140,-1),style=wx.TE_PROCESS_ENTER | wx.TE_PROCESS_TAB)'''
-        self.lblname = wx.StaticText(self.notebook_2_pane_2, label="Services :", pos=(200,60))
-        self.service = wx.TextCtrl(self.notebook_2_pane_2, value="2", pos=(250, 60), size=(140,-1),style=wx.TE_PROCESS_ENTER | wx.TE_PROCESS_TAB)
-        self.lblname = wx.StaticText(self.notebook_2_pane_2, label="Vlans :", pos=(400,60))
-        self.servicevlan = wx.TextCtrl(self.notebook_2_pane_2, value="200,300", pos=(450, 60), size=(140,-1),style=wx.TE_PROCESS_ENTER | wx.TE_PROCESS_TAB)
+        #self.lblname = wx.StaticText(self.notebook_2_pane_2, label="Services :", pos=(200,60))
+        #self.service = wx.TextCtrl(self.notebook_2_pane_2, value="2", pos=(250, 60), size=(140,-1),style=wx.TE_PROCESS_ENTER | wx.TE_PROCESS_TAB)
+        self.lblname = wx.StaticText(self.notebook_2_pane_2, label="Vlans :", pos=(200,60))
+        self.servicevlan = wx.TextCtrl(self.notebook_2_pane_2, value="200,300", pos=(250, 60), size=(140,-1),style=wx.TE_PROCESS_ENTER | wx.TE_PROCESS_TAB)
+
 
         #wx.ComboBox(self.notebook_2_pane_2, -1, choices=self.setupList, style=wx.CB_DROPDOWN | wx.CB_DROPDOWN,size=(184,20))
         self.labeldlubr = wx.StaticText(self.notebook_2_pane_2, label="DL UBR :", pos=(200,180))
@@ -129,16 +130,17 @@ class MyFrame(wx.Frame):
         self.valueulubr = wx.TextCtrl(self.notebook_2_pane_2, value='15', pos=(500, 180), size=(140,-1),style=wx.TE_PROCESS_ENTER | wx.TE_PROCESS_TAB)
         self.checkbox_ulubr= wx.CheckBox(self.notebook_2_pane_2, label="", pos=(650, 180))
         #self.adapt= wx.CheckBox(self.notebook_2_pane_2, label="Adapt_Mod", pos=(200, 120))
-        self.adapt = wx.RadioBox(self.notebook_2_pane_2,-1, _("Modulation Type"),(200,120), choices=[_("ON"), _("OFF"), _("None")], majorDimension=3, style=wx.RA_SPECIFY_COLS)
+        self.adapt = wx.RadioBox(self.notebook_2_pane_2,-1, ("Adaptive Modulation"),(200,120), choices=[("ON"), ("OFF"), ("None")], majorDimension=3, style=wx.RA_SPECIFY_COLS)
         self.Bind(wx.EVT_CHECKBOX, self.EvtCheckBoxAdapt, self.adapt)
-        self.button_prov =wx.Button(self.notebook_2_pane_2, label="Create", pos=(200, 90))
+        #self.button_prov =wx.Button(self.notebook_2_pane_2, label="Create", pos=(200, 90))
+        self.button_prov =wx.Button(self.notebook_2_pane_2, label="Create", pos=(200, 340))
         self.button_prov.Bind(wx.EVT_BUTTON, self.Clickbutton_prov)
-        self.button_change =wx.Button(self.notebook_2_pane_2, label="Change", pos=(200, 340))
+        self.button_change =wx.Button(self.notebook_2_pane_2, label="Change", pos=(300, 340))
         self.button_change.Bind(wx.EVT_BUTTON, self.Clickbutton_change)
                
-        self.radio_mode = wx.RadioBox(self.notebook_2_pane_2,-1, _("Radio Mode"),(200,210), choices=[_("ON"), _("OFF"), _("None")], majorDimension=3, style=wx.RA_SPECIFY_COLS)
-        self.cyclic_prefix = wx.RadioBox(self.notebook_2_pane_2,-1, _("Cyclic Prefix"),(400,210), choices=[_("1/4"), _("1/8"), _("None")], majorDimension=3, style=wx.RA_SPECIFY_COLS)
-        self.chsize = wx.RadioBox(self.notebook_2_pane_2,-1, _("Channel Size"),(600,210), choices=[_("0.875"), _("1.25"), _("1.75"), _("2.5"), _("3.5"), _("5"), _("7"), _("10"), _("14"), _("20"), _("None")], majorDimension=3, style=wx.RA_SPECIFY_COLS)
+        self.radio_mode = wx.RadioBox(self.notebook_2_pane_2,-1, ("Radio Mode"),(200,210), choices=[_("ON"), ("OFF"), ("None")], majorDimension=3, style=wx.RA_SPECIFY_COLS)
+        self.cyclic_prefix = wx.RadioBox(self.notebook_2_pane_2,-1, ("Cyclic Prefix"),(400,210), choices=[("1/4"), ("1/8"), ("None")], majorDimension=3, style=wx.RA_SPECIFY_COLS)
+        self.chsize = wx.RadioBox(self.notebook_2_pane_2,-1, _("Channel Size"),(600,210), choices=[("0.875"), ("1.25"), ("1.75"), ("2.5"), ("3.5"), ("5"), ("7"), ("10"), ("14"), ("20"), ("None")], majorDimension=3, style=wx.RA_SPECIFY_COLS)
         self.labelfreq = wx.StaticText(self.notebook_2_pane_2, label="Frequency :", pos=(200,270))
         self.valuefreq = wx.TextCtrl(self.notebook_2_pane_2,value='3500', pos=(270, 270),size=(140,-1),style= wx.TE_PROCESS_ENTER | wx.TE_PROCESS_TAB)
         self.checkbox_freq= wx.CheckBox(self.notebook_2_pane_2, label="", pos=(420, 270))
@@ -163,7 +165,7 @@ class MyFrame(wx.Frame):
 
     def __set_properties(self):
         # begin wxGlade: MyFrame.__set_properties
-        self.SetTitle(_("Lab Tool"))
+        self.SetTitle(("Lab Tool"))
         self.SetSize((900, 900))
         self.SetForegroundColour(wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DDKSHADOW))
         self.radio.SetFocus()
@@ -187,8 +189,8 @@ class MyFrame(wx.Frame):
         sizer_1 = wx.BoxSizer(wx.HORIZONTAL)
         grid_sizer_1 = wx.GridSizer(4, 3, 0, 0)
         self.notebook_2_pane_1.SetSizer(grid_sizer_1)
-        self.notebook_2.AddPage(self.notebook_2_pane_1, _("Services"))
-        self.notebook_2.AddPage(self.notebook_2_pane_2, _("Provisioning"))
+        self.notebook_2.AddPage(self.notebook_2_pane_1, ("Services"))
+        self.notebook_2.AddPage(self.notebook_2_pane_2, ("Provisioning"))
         sizer_1.Add(self.notebook_2, 1, wx.EXPAND, 0)
         self.SetSizer(sizer_1)
         self.Layout()
@@ -203,9 +205,8 @@ class MyFrame(wx.Frame):
         self.thread.start()
         #result=Device.Device().SaveServiceValue()
         self.logr.info('Finish process')
-        
-    def Clickbutton_change(self,event):
-        adapt_status=''
+
+    def getvalues(self):
         self.logr.info('Starting to apply values....')
         items=str(self.devicelist.GetValue())
         list=items.split('\n')
@@ -220,19 +221,25 @@ class MyFrame(wx.Frame):
         if self.valuefreq.IsEnabled():
             freq=str(self.valuefreq.GetValue())
             freq='set rffreq '+freq
-            self.logr.info('Change Frequency')
+            self.logr.info('Set Frequency')
         if self.valuedlubr.IsEnabled():
             dlubr=str(self.valuedlubr.GetValue())
-            self.logr.info('Change DL UBR')
+            self.logr.info('Set DL UBR')
         if self.valueulubr.IsEnabled():
             ulubr=str(self.valueulubr.GetValue())
-            self.logr.info('Change UL UBR')
+            self.logr.info('Set UL UBR')
         if self.cyclic_prefix.GetSelection()!=2:
             if self.cyclic_prefix.GetSelection()==0:
                 cp='set cp 0'
             else:
                 cp='set cp 1'
             self.logr.info('Change cycle prefix')
+        if self.radio_mode.GetSelection()!=2:
+            if self.radio_mode.GetSelection()==0:
+                radio_mode='set radio on'
+            else:
+                radio_mode='set radio off'
+            self.logr.info('Set radio mode')
         if self.chsize.GetSelection()!=10:
             if self.chsize.GetSelection()==0:
                 chsize='set chwidth 0.875'
@@ -256,24 +263,25 @@ class MyFrame(wx.Frame):
                 chsize='set chwidth 20'
             self.logr.info('Change channel size')
 
-            
+
         if self.adapt.GetSelection()!=2:
             if self.adapt.GetSelection()==0:
                 adapt='on '
             else:
                 adapt='off '
-            self.logr.info('Modify modulation type')
+            self.logr.info('Set modulation type')
+        device=Device.Device(sc,freq,dlubr,ulubr,cp,chsize,radio_mode,adapt)
+        return device
 
-        Device.Device().ChangeLinksValue(sc,dlubr,ulubr,adapt)
-        count=0
-        if self.radio_mode.GetSelection()!=2:
-            if self.radio_mode.GetSelection()==0:
-                radio_mode='on'
-            else:
-                radio_mode='off'
+    def Clickbutton_change(self,event):
+        items=str(self.devicelist.GetValue())
+        list=items.split('\n')
+        sc=''.join(list[0])
 
+        device=self.getvalues()
+        device.ChangeLinksValue(device)
         for ip in reversed(list):
-            self.threadradio = threading.Thread(target=Device.Device().ChangeDeviceValue, args=(ip, radio_mode,freq,cp,chsize))
+            self.threadradio = threading.Thread(target=device.ChangeDeviceValue, args=(ip, device))
             self.threadradio.start()
 
 
@@ -357,12 +365,18 @@ class MyFrame(wx.Frame):
         count=0
         queue = Queue.Queue()
 
-            
+        device=self.getvalues()
+
+        items=str(self.devicelist.GetValue())
+        list=items.split('\n')
+        sc=''.join(list[0])
+
+
 
         for ip in list:
             if count==0:
                 #swver=Device.Device().getswversion(ip)
-                st=Device.Device().clearid(ip)
+                st=device.clearid(ip)
                 sc=ip
                 count+=1
                 self.logr.info('Recognition of sector controller')
@@ -372,7 +386,7 @@ class MyFrame(wx.Frame):
                 count+=1
                 self.logr.info('Get subscriber mac address for ip '+''.join(ip))
 
-                thread1 = threading.Thread(target=Device.Device().getmac, args=(ip, queue))
+                thread1 = threading.Thread(target=device.getmac, args=(ip, queue))
                 threads.append(thread1)
                 #thread1.setDaemon(True)
                 thread1.start()
@@ -383,7 +397,7 @@ class MyFrame(wx.Frame):
         for ip in range(1,len(list),1):
                 macip = queue.get()
                 if macip=='':
-                    self.logr.info('Device  is not up '+list[ip]+'. The ip has been ignored')
+                    self.logr.info('Device  is not up '+list[ip]+'. The ip has been ignored')#TODO: BUG anumite deviceuri sunt up dar ele sunt ignorate
                 else:
                     macip=macip.replace('\n','')
                     if len(macip)>18:
@@ -393,27 +407,34 @@ class MyFrame(wx.Frame):
                         listmac.append(mac)  
                         listipss.append(ip)  
 
-                #thread2 = threading.Thread(target=Device.Device().getip, args=(ip, my_queue))
-                #threads.append(thread2)
-                #thread2.setDaemon(True)
-                #thread2.start()
-                #thread2.join()
-                #ipss = my_queue.get()
-                #listipss.append(ipss) 
         self.logr.info('Create elements...')
-        dict = {'Name': 'Zara', 'Age': 7, 'Class': 'First'};
-        dict_frame={'group':int(self.service.GetValue()),
-                    'service':int(self.service.GetValue()),
-                    'groupvlan':str(self.servicevlan.GetValue()),
+        #dict = {'Name': 'Zara', 'Age': 7, 'Class': 'First'};
+        dict_frame={'groupvlan':str(self.servicevlan.GetValue()),
                     'servicevlan':str(self.servicevlan.GetValue()),
                     'tftp':str(self.tftp.GetValue()),
-                    'dlubr':str(self.valuedlubr.GetValue()),
-                    'ulubr':str(self.valueulubr.GetValue())}
+                    'dlubr':str(device.dlubr),
+                    'ulubr':str(device.ulubr),
+                    'modulation':str(device.adapt),
+                    'radio':str(device.radio_mode),
+                    'cp':str(device.cp),
+                    'channel':str(device.chsize),
+                    'frequency':str(device.freq) }
         #MyFrame(None, -1, "Lab Tool", (-1,-1), (600,600))
         #thread_prov = threading.Thread(target=Provision.Provision().createProv, args=(sc,len(listmac), listmac,listipss,int(self.service.GetValue()),int(self.service.GetValue()),str(self.servicevlan.GetValue()),str(self.servicevlan.GetValue()),str(self.tftp.GetValue())))
-        thread_prov = threading.Thread(target=Provision.Provision().createProv, args=(sc,len(listmac),listmac,listipss,dict_frame))
+        prov=Provision.Provision
+        thread_prov = threading.Thread(target=prov.createProv, args=(sc,len(listmac),listmac,listipss,dict_frame))
         thread_prov.start()
-        #Provision.Provision().createProv(sc,len(listmac), listmac,listipss,int(self.service.GetValue()),int(self.service.GetValue()),str(self.servicevlan.GetValue()),str(self.servicevlan.GetValue()),str(self.tftp.GetValue()))
+
+        device.ChangeLinksValue(device)
+        for ip in reversed(list):
+            threadradio = threading.Thread(target=device.ChangeDeviceValue, args=(ip, device))
+            threadradio.start()
+
+
+
+
+        #prov=Provision.Provision
+        #prov.createProv(sc,len(listmac),listmac,listipss,dict_frame)
         self.logr.info('Finish') 
 
         
