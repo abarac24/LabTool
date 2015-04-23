@@ -1,20 +1,21 @@
-import wx
-import TelnetController
 import re
 import os
-import telnetlib
-import logging
-import Interface
-import Queue
-import time
-import time
-import sys
-from threading import Thread
+
+import TelnetController
 
 
 class Device:
-    
-        
+    def __init__(self, sc, freq, dlubr, ulubr, cp, chsize, radio_mode, adapt):
+        self.sc = sc
+        self.freq = freq
+        self.dlubr = dlubr
+        self.ulubr = ulubr
+        self.cp = cp
+        self.chsize = chsize
+        self.radio_mode = radio_mode
+        self.adapt = adapt
+
+
     def SaveServiceValue(self,sector,dlcir,ulcir,statusradio,dlpir,ulpir):
         
         
@@ -30,7 +31,8 @@ class Device:
         cmd=''
         list_id=[]
         while len(list_id)<5:
-            list_id=telnet.run_command('show idtable',1).splitlines()
+            list_id = telnet.run_command('show idtable',
+                                         1).splitlines()  # TODO: In cazul in care nu exista linkuri userul trebuie avertizat
         
         services=self.getserviceid(list_id)
         if statusradio is True:
@@ -47,8 +49,9 @@ class Device:
         telnet.logout()
         
         return True
-    
-    def getserviceid(self,listid):
+
+    @staticmethod
+    def getserviceid(listid):
         list_service=[]
         for element in listid:
             st=''.join(element)
@@ -57,16 +60,18 @@ class Device:
                 list_service.append(st)
         return list_service
 
-    def getlinkid(self,listid):
+    @staticmethod
+    def getlinkid(listid):
         list_service=[]
         for element in listid:
             st=''.join(element)
-            if st.find('Link')!=-1:
+            if st.find('Link') != -1:  # TODO this step should be implemented also for templeate links.
                 st = re.findall('[\s]\d{1,3}[\s]', st)
                 list_service.append(st)
         return list_service
-    
-    def getswversion(self,num):
+
+    @staticmethod
+    def getswversion(num):
         telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = 'admin', password = 'admin', prompt = '#')
         telnet.login()
         sw=''
@@ -76,7 +81,9 @@ class Device:
         sw = ''.join(sw)[startindex+1:startindex+4]
         telnet.logout()
         return sw
-    def getmac(self,num,out_queue):
+
+    @staticmethod
+    def getmac(num, out_queue):
         response = os.system("ping " +num.rstrip()+ " -n 2")
         if response != 0:
             print('Error: Device is not up  '+num+'\n')
@@ -86,7 +93,7 @@ class Device:
         telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = 'admin', password = 'admin', prompt = '#')
         telnet.login()
         maclist=''
-        while(len(maclist)<11):
+        while len(maclist) < 11:
             maclist=telnet.run_command('get mac',1)
 
         #time.sleep(1)
@@ -96,11 +103,12 @@ class Device:
         telnet.logout()
         out_queue.put(mac.replace(' ', '')+num.rstrip())
         #return mac
-            
-    def clearid(self,num):
+
+    @staticmethod
+    def clearid(num):
         telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = 'admin', password = 'admin', prompt = '#')
         status_login=telnet.login()
-        if status_login==False:
+        if not status_login:
             print('Error: Unable to start a telnet session on device  '+num+'\n')
             return False
 
@@ -111,11 +119,11 @@ class Device:
         telnet.logout()
         return True
     #ChangeValue, args=(self.radio.IsChecked(),str(self.valuedlubr.GetValue()),str(self.valueulubr.GetValue())
-                       
-    def ChangeLinksValue(self,sector,dlubr,ulubr,statusadapt):
-        
-        
-        num=sector
+
+    def ChangeLinksValue(self, device):
+
+
+        num = device.sc
         response = os.system("ping " +num.rstrip()+ " -n 1")
         if response != 0:
             return False
@@ -130,35 +138,37 @@ class Device:
         
         links=self.getlinkid(list_id)
         for i in links:
-            if statusadapt!='':
-                cmd=cmd+'set adaptmod '+''.join(i)+' '+statusadapt+'\n'
+            if device.adapt != '':
+                cmd = cmd + 'set adaptmod ' + ''.join(i) + ' ' + device.adapt + '\n'
             #telnet.run_command(cmd,0)
-            if dlubr!='':    
-                cmd= cmd+'set dlrate '+''.join(i)+' '+dlubr+'\n'
-            if ulubr!='':    
-                cmd= cmd+'set ulrate '+''.join(i)+' '+ulubr+'\n'
-        if statusadapt!='' or dlubr!='' or ulubr!='':
+            if device.dlubr != '':
+                cmd = cmd + 'set dlrate ' + ''.join(i) + ' ' + device.dlubr + '\n'
+            if device.ulubr != '':
+                cmd = cmd + 'set ulrate ' + ''.join(i) + ' ' + device.ulubr + '\n'
+        if device.adapt != '' or device.dlubr != '' or device.ulubr != '':
             telnet.run_command(cmd+'save config'+'\n',0)
         telnet.logout()
         return True
 
-    def ChangeDeviceValue(self,ip,radio_status,freq,cp,chsize):
+    @staticmethod
+    def ChangeDeviceValue(ip, device):
         telnet = TelnetController.TelnetController(host_name = ip.rstrip(), user_name = 'admin', password = 'admin', prompt = '#')
         telnet.login()
         cmd=''
-        if radio_status!= '':
-            cmd=cmd+'set radio '+radio_status+'\r\n'
-        if freq!='':
-            cmd=cmd+' '+freq+'\r\n'
-        if cp!='':
-            cmd=cmd+' '+cp+'\r\n'
-        if chsize!='':
-            cmd=cmd+' '+chsize+'\r\n'
-        if radio_status!='' or cp=='' or chsize=='':
+        if device.radio_mode != '':
+            cmd = cmd + 'set radio ' + device.radio_mode + '\r\n'
+        if device.freq != '':
+            cmd = cmd + ' ' + device.freq + '\r\n'
+        if device.cp != '':
+            cmd = cmd + ' ' + device.cp + '\r\n'
+        if device.chsize != '':
+            cmd = cmd + ' ' + device.chsize + '\r\n'
+        if device.radio_mode != '' or device.cp == '' or device.chsize == '':
             telnet.run_command(cmd+'save config'+'\r\n',0)
 
-        
-    def getip(self,num,out_queue):
+
+    @staticmethod
+    def getip(num, out_queue):
         telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = 'admin', password = 'admin', prompt = '#')
         telnet.login()
         iplist=telnet.run_command('set ipaddr',1).splitlines()
