@@ -367,12 +367,6 @@ class MyFrame(wx.Frame):
 
         device=self.getvalues()
 
-        items=str(self.devicelist.GetValue())
-        list=items.split('\n')
-        sc=''.join(list[0])
-
-
-
         for ip in list:
             if count==0:
                 #swver=Device.Device().getswversion(ip)
@@ -422,9 +416,9 @@ class MyFrame(wx.Frame):
         #MyFrame(None, -1, "Lab Tool", (-1,-1), (600,600))
         #thread_prov = threading.Thread(target=Provision.Provision().createProv, args=(sc,len(listmac), listmac,listipss,int(self.service.GetValue()),int(self.service.GetValue()),str(self.servicevlan.GetValue()),str(self.servicevlan.GetValue()),str(self.tftp.GetValue())))
         prov=Provision.Provision
-        thread_prov = threading.Thread(target=prov.createProv, args=(sc,len(listmac),listmac,listipss,dict_frame))
-        thread_prov.start()
-
+        '''thread_prov = threading.Thread(target=prov.createProv, args=(sc,len(listmac),listmac,listipss,dict_frame))
+        thread_prov.start()'''
+        prov.createProv(sc,len(listmac),listmac,listipss,dict_frame)
         device.ChangeLinksValue(device)
         for ip in reversed(list):
             threadradio = threading.Thread(target=device.ChangeDeviceValue, args=(ip, device))
