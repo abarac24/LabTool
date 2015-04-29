@@ -127,15 +127,16 @@ class Provision:
         log = open("log.cfg", "w")
         log.write(cmdlog)
         log.close()
-        '''client = tftpy.TftpClient(tftpip, 69)
+        print 'Start tftp client'
+        client = tftpy.TftpClient(tftpip, 69)
         client.upload('log.cfg', 'log.cfg')
-        telnet.run_command('load script '+tftpip+' log.cfg',0)'''
+        telnet.run_command('load script '+tftpip+' log.cfg',0)
         #telnet.run_command('save config',0)
         #telnet.run_command(cmd,0)
         #telnet.run_command('logout',1)
 
         telnet.logout()
-            
+
         
 
 
