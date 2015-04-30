@@ -29,6 +29,8 @@ class Provision:
         cp=dict['cp']
         channel=dict['channel']
         frequency=dict['frequency']
+        cir=dict['cir']
+        pir=dict['pir']
 
         telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = 'admin', password = 'admin', prompt = '#')
         telnet.login()
@@ -98,13 +100,13 @@ class Provision:
                         'set idname '+ii+' Service'+ii+'\n' \
                         'set conlid '+ii+' '+str(linkid)+'\n' \
                         'set congid '+ii+' '+str(grp_count)+'\n' \
-                        'set dlcir '+ii+' 50000'+'\n' \
-                        'set ulcir '+ii+' 50000'+'\n' \
+                        'set dlcir '+ii+' '+cir+'\n' \
+                        'set ulcir '+ii+' '+cir+'\n' \
                         'set conviden '+ii+ ' on'+'\n' \
                         'set convid '+ii+' '+vlanserlist[count]+'\n' \
                         'set conpri '+ii+' 0'+'\n' \
-                        'set dlpir '+ii+' 100000'+'\n' \
-                        'set ulpir '+ii+' 100000'+'\n' \
+                        'set dlpir '+ii+' '+pir+'\n' \
+                        'set ulpir '+ii+' '+pir+'\n' \
                         'set srvdot1pena '+ii+' off'+'\n' \
                         'set srvdot1p0 '+ii+' 0'+'\n' \
                         'set srvdot1p1 '+ii+' 0'+'\n' \
