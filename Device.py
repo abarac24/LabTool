@@ -6,7 +6,7 @@ import TelnetController
 
 
 class Device:
-    def __init__(self, sc, freq, dlubr, ulubr, cp, chsize, radio_mode, adapt):
+    def __init__(self, sc, freq, dlubr, ulubr, cp, chsize, radio_mode, adapt,cir,pir):
         self.sc = sc
         self.freq = freq
         self.dlubr = dlubr
@@ -15,6 +15,8 @@ class Device:
         self.chsize = chsize
         self.radio_mode = radio_mode
         self.adapt = adapt
+        self.cir=cir
+        self.pir=pir
 
 
     def SaveServiceValue(self,sector,dlcir,ulcir,statusradio,dlpir,ulpir):
@@ -65,7 +67,7 @@ class Device:
         list_service=[]
         for element in listid:
             st=''.join(element)
-            if st.find('Link') != -1 or st.find('L_Template') != -1 or st.find('L_Derived') != -1:  # TODO this step should be implemented also for templeate links.
+            if st.find('Link') != -1 or st.find('L_Template') != -1 or st.find('L_Derived') != -1:
                 st = re.findall('[\s]\d{1,3}[\s]', st)
                 list_service.append(st)
         return list_service
@@ -143,6 +145,7 @@ class Device:
                 print('Your idtable is incomplete(i.e. services missing)')
                 break
         links=self.getlinkid(list_id)
+        services=self.getserviceid(list_id)
         for i in links:
             if device.adapt != '':
                 cmd = cmd + 'set adaptmod ' + ''.join(i) + ' ' + device.adapt + '\n'
@@ -151,7 +154,14 @@ class Device:
                 cmd = cmd + 'set dlrate ' + ''.join(i) + ' ' + device.dlubr + '\n'
             if device.ulubr != '':
                 cmd = cmd + 'set ulrate ' + ''.join(i) + ' ' + device.ulubr + '\n'
-        if device.adapt != '' or device.dlubr != '' or device.ulubr != '':
+        for i in services:
+            if device.cir != '':
+                cmd = cmd + 'set dlcir ' + ''.join(i) + ' ' + device.cir + '\n'
+                cmd = cmd + 'set ulcir ' + ''.join(i) + ' ' + device.cir + '\n'
+            if device.pir != '':
+                cmd = cmd + 'set dlpir ' + ''.join(i) + ' ' + device.pir + '\n'
+                cmd = cmd + 'set ulpir ' + ''.join(i) + ' ' + device.pir + '\n'
+        if device.adapt != '' or device.dlubr != '' or device.ulubr != '' or device.cir != '' or device.pir != '':
             print "change links value according this command"+cmd
             telnet.run_command(cmd+'save config'+'\n',0)
         telnet.run_command('logout',0)
