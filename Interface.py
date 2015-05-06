@@ -301,8 +301,10 @@ class MyFrame(wx.Frame):
 
         device=self.getvalues()
         device.ChangeLinksValue(device)
+        self.logr.info('Change Links values')
         for ip in reversed(list):
             self.threadradio = threading.Thread(target=device.ChangeDeviceValue, args=(ip, device))
+            self.logr.info('Change Device values'+ip)
             self.threadradio.start()
 
 
@@ -457,6 +459,7 @@ class MyFrame(wx.Frame):
         prov=Provision.Provision
         '''thread_prov = threading.Thread(target=prov.createProv, args=(sc,len(listmac),listmac,listipss,dict_frame))
         thread_prov.start()'''
+        self.logr.info('Create provision ')
         prov.createProv(sc,len(listmac),listmac,listipss,dict_frame)
         device.ChangeLinksValue(device)
         for ip in reversed(list):
@@ -464,10 +467,6 @@ class MyFrame(wx.Frame):
             threadradio.start()
 
 
-
-
-        #prov=Provision.Provision
-        #prov.createProv(sc,len(listmac),listmac,listipss,dict_frame)
         self.logr.info('Finish') 
 
         
