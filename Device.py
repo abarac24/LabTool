@@ -1,12 +1,11 @@
 import re
 import os
-import logging
 
 import TelnetController
 
 
 class Device:
-    def __init__(self, sc, freq, dlubr, ulubr, cp, chsize, radio_mode, adapt,cir,pir):
+    def __init__(self, sc, freq, dlubr, ulubr, cp, chsize, radio_mode, adapt):
         self.sc = sc
         self.freq = freq
         self.dlubr = dlubr
@@ -15,14 +14,12 @@ class Device:
         self.chsize = chsize
         self.radio_mode = radio_mode
         self.adapt = adapt
-        self.cir=cir
-        self.pir=pir
 
 
     def SaveServiceValue(self,sector,dlcir,ulcir,statusradio,dlpir,ulpir):
-
-
-
+        
+        
+        
         num=sector
         response = os.system("ping " +num.rstrip()+ " -n 1")
         if response != 0:
@@ -34,8 +31,8 @@ class Device:
         cmd=''
         list_id=[]
         while len(list_id)<5:
-            list_id=telnet.run_command('show idtable',1).splitlines()
-
+            list_id = telnet.run_command('show idtable',1).splitlines()  # TODO: In cazul in care nu exista linkuri userul trebuie avertizat
+        
         services=self.getserviceid(list_id)
         if statusradio is True:
             cmd='set radio off'+'\n'+'save config'+'\n'
@@ -49,7 +46,7 @@ class Device:
             cmd='set radio on'+'\n'+'save config'+'\n'
         telnet.run_command(cmd,0)
         telnet.logout()
-
+        
         return True
 
     @staticmethod
@@ -67,7 +64,7 @@ class Device:
         list_service=[]
         for element in listid:
             st=''.join(element)
-            if st.find('Link') != -1 or st.find('L_Template') != -1 or st.find('L_Derived') != -1:
+            if st.find('Link') != -1:  # TODO this step should be implemented also for templeate links.
                 st = re.findall('[\s]\d{1,3}[\s]', st)
                 list_service.append(st)
         return list_service
@@ -86,19 +83,17 @@ class Device:
 
     @staticmethod
     def getmac(num, out_queue):
-        response = os.system("ping " +num.rstrip()+ " -n 2")
+        response = os.system("ping " +num.rstrip()+ " -c 2")
         if response != 0:
             print('Error: Device is not up  '+num+'\n')
             out_queue.put('')
             return
-
+        
         telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = 'admin', password = 'admin', prompt = '#')
         telnet.login()
         maclist=''
         while len(maclist) < 11:
             maclist=telnet.run_command('get mac',1)
-
-        print maclist
 
         #time.sleep(1)
         startindex=''.join(maclist).rfind('=')
@@ -119,7 +114,7 @@ class Device:
         telnet.run_command('clear idtable',0)
         telnet.run_command('save config',0)
 
-
+        
         telnet.logout()
         return True
     #ChangeValue, args=(self.radio.IsChecked(),str(self.valuedlubr.GetValue()),str(self.valueulubr.GetValue())
@@ -128,7 +123,7 @@ class Device:
 
 
         num = device.sc
-        response = os.system("ping " +num.rstrip()+ " -n 1")
+        response = os.system("ping " +num.rstrip()+ " -c 1")
         if response != 0:
             return False
 
@@ -137,15 +132,10 @@ class Device:
         telnet.login()
         cmd=''
         list_id=[]
-        count=0
         while len(list_id)<5:
             list_id=telnet.run_command('show idtable',1).splitlines()
-            count+=1
-            if count>10:
-                print('Your idtable is incomplete(i.e. services missing)')
-                break
+        
         links=self.getlinkid(list_id)
-        services=self.getserviceid(list_id)
         for i in links:
             if device.adapt != '':
                 cmd = cmd + 'set adaptmod ' + ''.join(i) + ' ' + device.adapt + '\n'
@@ -154,35 +144,18 @@ class Device:
                 cmd = cmd + 'set dlrate ' + ''.join(i) + ' ' + device.dlubr + '\n'
             if device.ulubr != '':
                 cmd = cmd + 'set ulrate ' + ''.join(i) + ' ' + device.ulubr + '\n'
-        for i in services:
-            if device.cir != '':
-                cmd = cmd + 'set dlcir ' + ''.join(i) + ' ' + device.cir + '\n'
-                cmd = cmd + 'set ulcir ' + ''.join(i) + ' ' + device.cir + '\n'
-            if device.pir != '':
-                cmd = cmd + 'set dlpir ' + ''.join(i) + ' ' + device.pir + '\n'
-                cmd = cmd + 'set ulpir ' + ''.join(i) + ' ' + device.pir + '\n'
-        if device.adapt != '' or device.dlubr != '' or device.ulubr != '' or device.cir != '' or device.pir != '':
-            print "change links value according this command"+cmd
+        if device.adapt != '' or device.dlubr != '' or device.ulubr != '':
             telnet.run_command(cmd+'save config'+'\n',0)
-        telnet.run_command('logout',0)
-        #telnet.logout()
+        telnet.logout()
         return True
 
     @staticmethod
     def ChangeDeviceValue(ip, device):
-        num = ip
-        response = os.system("ping " +num.rstrip()+ " -n 1")
-        if response != 0:
-            print "Device is not found"
-            return False
         telnet = TelnetController.TelnetController(host_name = ip.rstrip(), user_name = 'admin', password = 'admin', prompt = '#')
-        st=telnet.login()
-        if st==False:
-            print "Device can not reacheble on telnet"
-            return False
+        telnet.login()
         cmd=''
         if device.radio_mode != '':
-            cmd = cmd + ' ' + device.radio_mode + '\r\n'
+            cmd = cmd + 'set radio ' + device.radio_mode + '\r\n'
         if device.freq != '':
             cmd = cmd + ' ' + device.freq + '\r\n'
         if device.cp != '':
