@@ -301,7 +301,7 @@ class Telnet:
         self.process_rawq()
         i = self.cookedq.find(match)
         if i >= 0:
-            i = i+n
+            i += n
             buf = self.cookedq[:i]
             self.cookedq = self.cookedq[i:]
             return buf

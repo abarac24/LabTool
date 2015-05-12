@@ -133,32 +133,21 @@ class MyFrame(wx.Frame):
         self.adapt = wx.RadioBox(self.notebook_2_pane_2,-1, ("Adaptive Modulation"),(200,120), choices=[("ON"), ("OFF"), ("None")], majorDimension=3, style=wx.RA_SPECIFY_COLS)
         self.Bind(wx.EVT_CHECKBOX, self.EvtCheckBoxAdapt, self.adapt)
         #self.button_prov =wx.Button(self.notebook_2_pane_2, label="Create", pos=(200, 90))
-
-        self.lblname = wx.StaticText(self.notebook_2_pane_2, label="DL/UL CIR :", pos=(200,340))
-        self.dlulcir = wx.TextCtrl(self.notebook_2_pane_2, value="50000", pos=(260, 335), size=(50,-1),style=wx.TE_PROCESS_ENTER | wx.TE_PROCESS_TAB)
-        self.checkbox_cir= wx.CheckBox(self.notebook_2_pane_2, label="", pos=(320, 340))
-
-        self.lblname = wx.StaticText(self.notebook_2_pane_2, label="DL/UL PIR :", pos=(340,340))
-        self.dlulpir = wx.TextCtrl(self.notebook_2_pane_2, value="50000", pos=(400, 335), size=(50,-1),style=wx.TE_PROCESS_ENTER | wx.TE_PROCESS_TAB)
-        self.checkbox_pir= wx.CheckBox(self.notebook_2_pane_2, label="", pos=(460, 340))
-
-        self.button_prov =wx.Button(self.notebook_2_pane_2, label="Create", pos=(200, 400))
+        self.button_prov =wx.Button(self.notebook_2_pane_2, label="Create", pos=(200, 340))
         self.button_prov.Bind(wx.EVT_BUTTON, self.Clickbutton_prov)
-        self.button_change =wx.Button(self.notebook_2_pane_2, label="Change", pos=(300, 400))
+        self.button_change =wx.Button(self.notebook_2_pane_2, label="Change", pos=(300, 340))
         self.button_change.Bind(wx.EVT_BUTTON, self.Clickbutton_change)
                
         self.radio_mode = wx.RadioBox(self.notebook_2_pane_2,-1, ("Radio Mode"),(200,210), choices=[_("ON"), ("OFF"), ("None")], majorDimension=3, style=wx.RA_SPECIFY_COLS)
         self.cyclic_prefix = wx.RadioBox(self.notebook_2_pane_2,-1, ("Cyclic Prefix"),(400,210), choices=[("1/4"), ("1/8"), ("None")], majorDimension=3, style=wx.RA_SPECIFY_COLS)
         self.chsize = wx.RadioBox(self.notebook_2_pane_2,-1, _("Channel Size"),(600,210), choices=[("0.875"), ("1.25"), ("1.75"), ("2.5"), ("3.5"), ("5"), ("7"), ("10"), ("14"), ("20"), ("None")], majorDimension=3, style=wx.RA_SPECIFY_COLS)
         self.labelfreq = wx.StaticText(self.notebook_2_pane_2, label="Frequency :", pos=(200,270))
-        self.valuefreq = wx.TextCtrl(self.notebook_2_pane_2,value='3500', pos=(270 , 270),size=(140,-1),style= wx.TE_PROCESS_ENTER | wx.TE_PROCESS_TAB)
+        self.valuefreq = wx.TextCtrl(self.notebook_2_pane_2,value='3500', pos=(270, 270),size=(140,-1),style= wx.TE_PROCESS_ENTER | wx.TE_PROCESS_TAB)
         self.checkbox_freq= wx.CheckBox(self.notebook_2_pane_2, label="", pos=(420, 270))
 
         self.Bind(wx.EVT_CHECKBOX, self.EvtCheckBoxFreq, self.checkbox_freq)
         self.Bind(wx.EVT_CHECKBOX, self.EvtCheckBoxDlUbr, self.checkbox_dlubr)
         self.Bind(wx.EVT_CHECKBOX, self.EvtCheckBoxULUBR, self.checkbox_ulubr)
-        self.Bind(wx.EVT_CHECKBOX, self.EvtCheckBoxCir, self.checkbox_cir)
-        self.Bind(wx.EVT_CHECKBOX, self.EvtCheckBoxPir, self.checkbox_pir)
 
 
         #self.radio_mode = wx.RadioButton(self.notebook_2_pane_2, -1, _("radio_mode"))
@@ -191,8 +180,6 @@ class MyFrame(wx.Frame):
         self.valuedlubr.Disable()
         self.valueulubr.Disable()
         self.valuefreq.Disable()
-        self.dlulcir.Disable()
-        self.dlulpir.Disable()
 
 
         # end wxGlade
@@ -231,14 +218,6 @@ class MyFrame(wx.Frame):
         chsize=''
         radio_mode=''
         adapt=''
-        cir=''
-        pir=''
-        if self.dlulcir.IsEnabled():
-            cir=str(self.dlulcir.GetValue())
-            self.logr.info('Set CIR')
-        if self.dlulpir.IsEnabled():
-            pir=str(self.dlulpir.GetValue())
-            self.logr.info('Set PIR')
         if self.valuefreq.IsEnabled():
             freq=str(self.valuefreq.GetValue())
             freq='set rffreq '+freq
@@ -291,7 +270,7 @@ class MyFrame(wx.Frame):
             else:
                 adapt='off '
             self.logr.info('Set modulation type')
-        device=Device.Device(sc,freq,dlubr,ulubr,cp,chsize,radio_mode,adapt,cir,pir)
+        device=Device.Device(sc,freq,dlubr,ulubr,cp,chsize,radio_mode,adapt)
         return device
 
     def Clickbutton_change(self,event):
@@ -301,10 +280,8 @@ class MyFrame(wx.Frame):
 
         device=self.getvalues()
         device.ChangeLinksValue(device)
-        self.logr.info('Change Links values')
         for ip in reversed(list):
             self.threadradio = threading.Thread(target=device.ChangeDeviceValue, args=(ip, device))
-            self.logr.info('Change Device values'+ip)
             self.threadradio.start()
 
 
@@ -345,21 +322,7 @@ class MyFrame(wx.Frame):
         else:
             self.valueulubr.Enable()
             self.logr.info('Modify UL UBR')
-    def EvtCheckBoxCir(self, event):
-        if self.checkbox_cir.GetValue() is False:
-            self.dlulcir.Disable()
-        else:
-            self.dlulcir.Enable()
-            self.logr.info('Modify cir value')
-    def EvtCheckBoxPir(self, event):
-        if self.checkbox_pir.GetValue() is False:
-            self.dlulpir.Disable()
-        else:
-            self.dlulpir.Enable()
-            self.logr.info('Modify pir value')
-
-
-
+            
     def onEnter(self, event):
         """"""
         keycode = event.GetKeyCode()
@@ -382,11 +345,12 @@ class MyFrame(wx.Frame):
             else:
                 self.button.SetFocus()
                 self.OnClick(event)
-                 
+
         event.Skip()
 
     def EvtComboBox(self, event):
         self.devicelist.Clear()
+        setup=Setup.Setup
         self.devicelist.AppendText(Setup.Setup().GetSetupName(self.combo_box_setup.GetStringSelection()))
 
     def writelog(self,text):
@@ -404,12 +368,16 @@ class MyFrame(wx.Frame):
 
         device=self.getvalues()
 
+        items=str(self.devicelist.GetValue())
+        list=items.split('\n')
+        sc=''.join(list[0])
+
+
+
         for ip in list:
             if count==0:
                 #swver=Device.Device().getswversion(ip)
                 st=device.clearid(ip)
-                if st==False:
-                    self.logr.info('Telnet session can not be opened '+ip)
                 sc=ip
                 count+=1
                 self.logr.info('Recognition of sector controller')
@@ -430,7 +398,7 @@ class MyFrame(wx.Frame):
         for ip in range(1,len(list),1):
                 macip = queue.get()
                 if macip=='':
-                    self.logr.info('Telnet session on device  '+list[ip]+' is slow. Maybe device needs a reboot.')
+                    self.logr.info('Device  is not up '+list[ip]+'. The ip has been ignored')#TODO: BUG anumite deviceuri sunt up dar ele sunt ignorate
                 else:
                     macip=macip.replace('\n','')
                     if len(macip)>18:
@@ -451,22 +419,23 @@ class MyFrame(wx.Frame):
                     'radio':str(device.radio_mode),
                     'cp':str(device.cp),
                     'channel':str(device.chsize),
-                    'frequency':str(device.freq),
-                    'cir':str(device.cir),
-                    'pir':str(device.pir) }
+                    'frequency':str(device.freq) }
         #MyFrame(None, -1, "Lab Tool", (-1,-1), (600,600))
         #thread_prov = threading.Thread(target=Provision.Provision().createProv, args=(sc,len(listmac), listmac,listipss,int(self.service.GetValue()),int(self.service.GetValue()),str(self.servicevlan.GetValue()),str(self.servicevlan.GetValue()),str(self.tftp.GetValue())))
         prov=Provision.Provision
-        '''thread_prov = threading.Thread(target=prov.createProv, args=(sc,len(listmac),listmac,listipss,dict_frame))
-        thread_prov.start()'''
-        self.logr.info('Create provision ')
+        #thread_prov = threading.Thread(target=prov.createProv, args=(sc,len(listmac),listmac,listipss,dict_frame))
+        #thread_prov.start()
         prov.createProv(sc,len(listmac),listmac,listipss,dict_frame)
-        device.ChangeLinksValue(device)
+
         for ip in reversed(list):
             threadradio = threading.Thread(target=device.ChangeDeviceValue, args=(ip, device))
             threadradio.start()
 
 
+
+
+        #prov=Provision.Provision
+        #prov.createProv(sc,len(listmac),listmac,listipss,dict_frame)
         self.logr.info('Finish') 
 
         

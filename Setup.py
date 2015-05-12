@@ -5,7 +5,7 @@ Created on Sep 19, 2014
 '''
 import xml.etree.ElementTree as ET
 class Setup:
-    
+
     def GetSetupName(self,name):
         tree = ET.parse('SetupList.xml')
         root = tree.getroot()
@@ -20,4 +20,3 @@ class Setup:
                 ss = setup.find('ss').text
                 break
         return sc+'\n'+ss.replace(';','\n')
-        
