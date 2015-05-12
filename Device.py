@@ -67,7 +67,7 @@ class Device:
         list_service=[]
         for element in listid:
             st=''.join(element)
-            if st.find('Link') != -1 or st.find('L_Template') != -1 or st.find('L_Derived') != -1:
+            if st.find('Link') != -1 or st.find('L_Template') != -1 or st.find('L_Derived') != -1:# TODO sortare linkuri in functie de ip-uri
                 st = re.findall('[\s]\d{1,3}[\s]', st)
                 list_service.append(st)
         return list_service
@@ -95,10 +95,9 @@ class Device:
         telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = 'admin', password = 'admin', prompt = '#')
         telnet.login()
         maclist=''
-        while len(maclist) < 11:
+        while(len(maclist)<11):
             maclist=telnet.run_command('get mac',1)
-
-        print maclist
+            print maclist
 
         #time.sleep(1)
         startindex=''.join(maclist).rfind('=')
@@ -106,6 +105,7 @@ class Device:
         mac = ''.join(maclist)[startindex+1:endindex]
         telnet.logout()
         out_queue.put(mac.replace(' ', '')+num.rstrip())
+        print "get mac for ip: "+num
         #return mac
 
     @staticmethod
@@ -140,10 +140,10 @@ class Device:
         count=0
         while len(list_id)<5:
             list_id=telnet.run_command('show idtable',1).splitlines()
-            count+=1
+            '''count+=1
             if count>10:
                 print('Your idtable is incomplete(i.e. services missing)')
-                break
+                break'''
         links=self.getlinkid(list_id)
         services=self.getserviceid(list_id)
         for i in links:
