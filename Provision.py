@@ -135,7 +135,7 @@ class Provision:
         telnet.run_command('load script '+tftpip+' log.cfg',0)
         #telnet.run_command('save config',0)
         #telnet.run_command(cmd,0)
-        #telnet.run_command('logout',1)
+        telnet.run_command('logout',1)
 
         telnet.logout()
 
