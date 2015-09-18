@@ -85,14 +85,14 @@ class Device:
         return sw
 
     @staticmethod
-    def getmac(num, out_queue):
+    def getmac(num,user,pasw, out_queue):
         response = os.system("ping " +num.rstrip()+ " -n 2")
         if response != 0:
             print('Error: Device is not up  '+num+'\n')
             out_queue.put('')
             return
 
-        telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = 'admin', password = 'admin', prompt = '#')
+        telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = user, password = pasw, prompt = '#')
         telnet.login()
         maclist=''
         while(len(maclist)<11):
@@ -128,12 +128,17 @@ class Device:
 
 
         num = device.sc
+        user='admin'
+        pasw='admin'
+        if num.find(',') != -1:
+            cred=num.split(',')
+            user=cred[1]
+            pasw=cred[2]
+            num=num[0:num.find(',')]
         response = os.system("ping " +num.rstrip()+ " -n 1")
         if response != 0:
             return False
-
-
-        telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = 'admin', password = 'admin', prompt = '#')
+        telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = user, password = pasw, prompt = '#')
         telnet.login()
         cmd=''
         list_id=[]
@@ -169,13 +174,20 @@ class Device:
         return True
 
     @staticmethod
-    def ChangeDeviceValue(ip, device):
+    def ChangeDeviceValue(ip, device,user,pasw):
         num = ip
-        response = os.system("ping " +num.rstrip()+ " -n 1")
+        user='admin'
+        pasw='admin'
+        if ip.find(',') != -1:
+            cred=ip.split(',')
+            user=cred[1]
+            pasw=cred[2]
+            ip=ip[0:ip.find(',')]
+        response = os.system("ping " +ip.rstrip()+ " -n 1")
         if response != 0:
             print "Device is not found"
             return False
-        telnet = TelnetController.TelnetController(host_name = ip.rstrip(), user_name = 'admin', password = 'admin', prompt = '#')
+        telnet = TelnetController.TelnetController(host_name = ip.rstrip(), user_name = user, password = pasw, prompt = '#')
         st=telnet.login()
         if st==False:
             print "Device can not reacheble on telnet"
@@ -191,6 +203,8 @@ class Device:
             cmd = cmd + ' ' + device.chsize + '\r\n'
         if device.radio_mode != '' or device.cp == '' or device.chsize == '':
             telnet.run_command(cmd+'save config'+'\r\n',0)
+        telnet.run_command('logout',0)
+
 
 
     @staticmethod
@@ -203,5 +217,14 @@ class Device:
         ip = ''.join(iplist)[startindex+1:endindex]
         telnet.logout()
         out_queue.put(ip)
-        return ip   
+        return ip
+    def setCredentials(self,ip):
+            user='admin'
+            pasw='admin'
+            if ip.find(',') != -1:
+                cred=ip.split(',')
+                user=cred[1]
+                pasw=cred[2]
+                ip=ip[0:ip.find(',')]
+            return ip
     

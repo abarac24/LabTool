@@ -6,7 +6,7 @@ Created on Sep 18, 2014
 import tftpy
 
 import TelnetController
-
+import os
 
 class Provision:
 
@@ -16,6 +16,7 @@ class Provision:
     @staticmethod
     def createProv(num,idlink,ssmac,ssip,dict):
 
+        flag_run=False
         #createProv(self,num,idlink,ssmac,ssip,idgroup,idservice,vlangr,vlanser,tftpip)
         #sw=Device.Device().getswversion(num)
         global i
@@ -31,8 +32,10 @@ class Provision:
         frequency=dict['frequency']
         cir=dict['cir']
         pir=dict['pir']
+        user=dict['user']
+        pasw=dict['pasw']
 
-        telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = 'admin', password = 'admin', prompt = '#')
+        telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = user, password = pasw, prompt = '#')
         telnet.login()
         count=0
         cmd=''
@@ -126,18 +129,22 @@ class Provision:
                      +cp+'\n' \
                      +radiomode+'\n'
         cmdlog= cmd+cmdgroup+cmdservice+aux_command+'save config'+'\n'
+        os.remove('log.cfg') if os.path.exists('log.cfg') else None
         log = open("log.cfg", "w")
         log.write(cmdlog)
         log.close()
         print 'Start tftp client'
         client = tftpy.TftpClient(tftpip, 69)
         client.upload('log.cfg', 'log.cfg')
+        #tftpy.TftpServer.root
         telnet.run_command('load script '+tftpip+' log.cfg',0)
         #telnet.run_command('save config',0)
         #telnet.run_command(cmd,0)
         telnet.run_command('logout',1)
 
         telnet.logout()
+        flag_run=True
+        return flag_run
 
         
 

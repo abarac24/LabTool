@@ -18,6 +18,8 @@
 import telnetlib
 import time
 import random
+import sys
+import traceback
 
 
 class TelnetController:
@@ -58,8 +60,8 @@ class TelnetController:
             self.tn.read_until("Login:")
             self.tn.write(self.user_name + '\r\n')
             if self.password:
-                #time.sleep(5)
-                self.tn.read_until('Password:',10)
+                time.sleep(1)
+                self.tn.read_until('Password:',5)
                 self.tn.write(self.password + '\r\n')
             time.sleep(1)
             check_prompt=self.tn.read_very_eager().split()
@@ -68,7 +70,8 @@ class TelnetController:
             self.tn.write('\r\n')
             self.tn.read_until(self.prompt)
             login_status=True    
-        except:
+        except Exception as error:
+            traceback.print_exc()
             print('Verify if connection is already opened or telnet port is changed on '+self.host_name)
             login_status=False
         return login_status        
