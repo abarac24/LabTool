@@ -5,8 +5,8 @@ import logging
 import TelnetController
 
 
-class Device:
-    def __init__(self, sc, freq, dlubr, ulubr, cp, chsize, radio_mode, adapt,cir,pir):
+class Device(object):
+    def __init__(self, sc, freq, dlubr, ulubr, cp, chsize, radio_mode, adapt,cir,pir,vlanfilter,syslog):
         self.sc = sc
         self.freq = freq
         self.dlubr = dlubr
@@ -17,8 +17,9 @@ class Device:
         self.adapt = adapt
         self.cir=cir
         self.pir=pir
-
-
+        self.vlanfilter=vlanfilter
+        self.syslog=syslog
+    @classmethod
     def SaveServiceValue(self,sector,dlcir,ulcir,statusradio,dlpir,ulpir):
 
 
@@ -36,7 +37,7 @@ class Device:
         while len(list_id)<5:
             list_id=telnet.run_command('show idtable',1).splitlines()
 
-        services=self.getserviceid(list_id)
+        services=Device.getserviceid(list_id)
         if statusradio is True:
             cmd='set radio off'+'\n'+'save config'+'\n'
         telnet.run_command(cmd,0)
@@ -51,9 +52,8 @@ class Device:
         telnet.logout()
 
         return True
-
-    @staticmethod
-    def getserviceid(listid):
+    @classmethod
+    def getserviceid(self,listid):
         list_service=[]
         for element in listid:
             st=''.join(element)
@@ -62,8 +62,7 @@ class Device:
                 list_service.append(st)
         return list_service
 
-    @staticmethod
-    def getlinkid(listid):
+    def getlinkid(self,listid):
         list_service=[]
         for element in listid:
             st=''.join(element)
@@ -72,20 +71,48 @@ class Device:
                 list_service.append(st)
         return list_service
 
-    @staticmethod
-    def getswversion(num):
-        telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = 'admin', password = 'admin', prompt = '#')
+    @classmethod
+    def getswversion(self,num,user,pasw, out_queue):
+        telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = user, password = pasw, prompt = '#')
         telnet.login()
         sw=''
         while len(sw)==0:
             sw=telnet.run_command('get swver',1).splitlines()
         startindex=''.join(sw).rfind('=')
-        sw = ''.join(sw)[startindex+1:startindex+4]
+        endindex=''.join(sw).rfind(')')
+        sw = ''.join(sw)[startindex+1:endindex+1]
         telnet.logout()
+        out_queue.put(num.rstrip()+','+sw.replace(' ', ''))
         return sw
 
-    @staticmethod
-    def getmac(num,user,pasw, out_queue):
+    @classmethod
+    def getmac(self,num,user,pasw, out_queue):
+        response = os.system("ping " +num.rstrip()+ " -n 2")
+        if response != 0:
+            print('Error: Device is not up  '+num+'\n')
+            out_queue.put('')
+            return
+
+        telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = user, password = pasw, prompt = '#')
+        telnet.login()
+        maclist=''
+        while(len(maclist)<11):
+            maclist=telnet.run_command('get mac',1)
+            print maclist
+
+        #time.sleep(1)
+        startindex=''.join(maclist).rfind('=')
+        endindex=len(''.join(maclist))
+        #mac = ''.join(maclist)[startindex+1:endindex]
+        mac = ''.join(maclist)[startindex+1:endindex]
+        telnet.logout()
+        #out_queue.put(mac.replace(' ', ''))
+        out_queue.put(mac.replace(' ', '')+num.rstrip())
+        print "get mac for ip: "+num
+        #return mac
+
+    @classmethod
+    def getmacss(self,num,user,pasw, out_queue):
         response = os.system("ping " +num.rstrip()+ " -n 2")
         if response != 0:
             print('Error: Device is not up  '+num+'\n')
@@ -103,13 +130,13 @@ class Device:
         startindex=''.join(maclist).rfind('=')
         endindex=len(''.join(maclist))
         mac = ''.join(maclist)[startindex+1:endindex]
+        #mac = ''.join(maclist)[startindex+1:endindex]
         telnet.logout()
-        out_queue.put(mac.replace(' ', '')+num.rstrip())
+        out_queue.put(num.rstrip()+','+mac.replace(' ', '').replace('\n',''))
         print "get mac for ip: "+num
-        #return mac
+        return mac
 
-    @staticmethod
-    def clearid(num):
+    def clearid(self,num):
         telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = 'admin', password = 'admin', prompt = '#')
         status_login=telnet.login()
         if not status_login:
@@ -159,6 +186,9 @@ class Device:
                 cmd = cmd + 'set dlrate ' + ''.join(i) + ' ' + device.dlubr + '\n'
             if device.ulubr != '':
                 cmd = cmd + 'set ulrate ' + ''.join(i) + ' ' + device.ulubr + '\n'
+            if device.pir != '':
+                cmd = cmd + 'set ldlpir ' + ''.join(i) + ' ' + device.pir + '\n'
+                cmd = cmd + 'set lulpir ' + ''.join(i) + ' ' + device.pir + '\n'
         for i in services:
             if device.cir != '':
                 cmd = cmd + 'set dlcir ' + ''.join(i) + ' ' + device.cir + '\n'
@@ -168,29 +198,39 @@ class Device:
                 cmd = cmd + 'set ulpir ' + ''.join(i) + ' ' + device.pir + '\n'
         if device.adapt != '' or device.dlubr != '' or device.ulubr != '' or device.cir != '' or device.pir != '':
             print "change links value according this command"+cmd
+            telnet.run_command(cmd+'set radio off'+'\n',0)
+            telnet.run_command(cmd+'set radio on'+'\n',0)
             telnet.run_command(cmd+'save config'+'\n',0)
+        #telnet.run_command('logout',0)
+        if device.radio_mode != '':
+            cmd = cmd + ' ' + device.radio_mode + '\r\n'
+        if device.freq != '':
+            cmd = cmd + ' ' + device.freq + '\r\n'
+        if device.cp != '':
+            cmd = cmd + ' ' + device.cp + '\r\n'
+        if device.chsize != '':
+            cmd = cmd + ' ' + device.chsize + '\r\n'
+        if device.vlanfilter != '':
+            cmd = cmd + ' ' + device.vlanfilter + '\r\n'
+        if device.syslog != '':
+            cmd = cmd + ' ' + device.syslog + '\r\n'
+        if device.vlanfilter != '':
+            cmd = cmd + ' ' + device.vlanfilter + '\r\n'
+        if device.radio_mode != '' or device.cp == '' or device.chsize == '':
+            telnet.run_command(cmd+'save config'+'\r\n',0)
         telnet.run_command('logout',0)
-        #telnet.logout()
         return True
 
-    @staticmethod
-    def ChangeDeviceValue(ip, device,user,pasw):
+    def ChangeDeviceValue(self,ip, device,user,pasw):
         num = ip
-        user='admin'
-        pasw='admin'
-        if ip.find(',') != -1:
-            cred=ip.split(',')
-            user=cred[1]
-            pasw=cred[2]
-            ip=ip[0:ip.find(',')]
         response = os.system("ping " +ip.rstrip()+ " -n 1")
         if response != 0:
-            print "Device is not found"
+            print "Device is not found:"
             return False
         telnet = TelnetController.TelnetController(host_name = ip.rstrip(), user_name = user, password = pasw, prompt = '#')
         st=telnet.login()
         if st==False:
-            print "Device can not reacheble on telnet"
+            print "Device can not reachable on telnet:"
             return False
         cmd=''
         if device.radio_mode != '':
@@ -201,14 +241,19 @@ class Device:
             cmd = cmd + ' ' + device.cp + '\r\n'
         if device.chsize != '':
             cmd = cmd + ' ' + device.chsize + '\r\n'
+        if device.vlanfilter != '':
+            cmd = cmd + ' ' + device.vlanfilter + '\r\n'
+        if device.syslog != '':
+            cmd = cmd + ' ' + device.syslog + '\r\n'
+        if device.vlanfilter != '':
+            cmd = cmd + ' ' + device.vlanfilter + '\r\n'
         if device.radio_mode != '' or device.cp == '' or device.chsize == '':
             telnet.run_command(cmd+'save config'+'\r\n',0)
         telnet.run_command('logout',0)
 
 
 
-    @staticmethod
-    def getip(num, out_queue):
+    def getip(self,num, out_queue):
         telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = 'admin', password = 'admin', prompt = '#')
         telnet.login()
         iplist=telnet.run_command('set ipaddr',1).splitlines()
