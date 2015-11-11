@@ -20,6 +20,7 @@ import time
 import random
 import sys
 import traceback
+import Interface
 
 
 class TelnetController:
@@ -32,7 +33,6 @@ class TelnetController:
     @ivar prompt: Command prompt (or partial string matching the end of the prompt)
     @ivar tn: Instance of a telnetlib.Telnet object
     """
-        
     def __init__(self, host_name, user_name, password, prompt):
         """
             
@@ -47,7 +47,7 @@ class TelnetController:
         self.password = password
         self.prompt = prompt
         self.tn = None
-        
+
         
     def login(self):
         """Connect to a remote host and login.
@@ -57,13 +57,14 @@ class TelnetController:
         try:
             self.tn = telnetlib.Telnet(self.host_name)      
             #self.tn.read_until('Login: ')
-            self.tn.read_until("Login:")
+            self.tn.read_until("Login:",timeout=10)
+
             self.tn.write(self.user_name + '\r\n')
             if self.password:
                 time.sleep(1)
-                self.tn.read_until('Password:',5)
+                self.tn.read_until("Password:",timeout=10)
                 self.tn.write(self.password + '\r\n')
-            time.sleep(1)
+            time.sleep(5)
             check_prompt=self.tn.read_very_eager().split()
             if ''.join(check_prompt).find('Login:')!=-1:
                 return login_status

@@ -4,6 +4,7 @@ Created on Sep 18, 2014
 @author: abarac
 """
 import tftpy
+import time
 
 import TelnetController
 import os
@@ -34,9 +35,14 @@ class Provision:
         pir=dict['pir']
         user=dict['user']
         pasw=dict['pasw']
+        vlanfilter=dict['vlanfilter']
+        syslog=dict['syslog']
 
         telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = user, password = pasw, prompt = '#')
         telnet.login()
+        telnet.run_command('clear idtable',0)
+        telnet.run_command('apply config',0)
+
         count=0
         cmd=''
         cmdgroup=''
@@ -55,8 +61,8 @@ class Provision:
                  'set adaptmod '+ii+' '+modulation+'\n' \
                  'set dlminrate '+ii+ ' 0'+'\n' \
                  'set ulminrate '+ii+ ' 0'+'\n' \
-                 'set ldlpir '+ii+' 100000'+'\n' \
-                 'set lulpir '+ii+' 100000'+'\n' \
+                 'set ldlpir '+ii+' '+pir+'\n' \
+                 'set lulpir '+ii+' '+pir+'\n' \
                  'set lrfmode '+ii+' '+'auto'+'\n' \
                  'set lautoscan '+ii+' off'+'\n' \
                  'set ltimeautoscan '+ii+' 600'+'\n' \
@@ -127,9 +133,11 @@ class Provision:
         aux_command= channel+ '\n' \
                      +frequency+'\n' \
                      +cp+'\n' \
-                     +radiomode+'\n'
+                     +radiomode+'\n' \
+                     +vlanfilter+'\n' \
+                     +syslog+'\n'
         cmdlog= cmd+cmdgroup+cmdservice+aux_command+'save config'+'\n'
-        os.remove('log.cfg') if os.path.exists('log.cfg') else None
+        #os.remove('log.cfg') if os.path.exists('log.cfg') else None
         log = open("log.cfg", "w")
         log.write(cmdlog)
         log.close()
@@ -138,6 +146,7 @@ class Provision:
         client.upload('log.cfg', 'log.cfg')
         #tftpy.TftpServer.root
         telnet.run_command('load script '+tftpip+' log.cfg',0)
+
         #telnet.run_command('save config',0)
         #telnet.run_command(cmd,0)
         telnet.run_command('logout',1)

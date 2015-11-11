@@ -17,6 +17,7 @@ from multiprocessing.pool import ThreadPool
 import Queue
 import sys
 import time
+import random
 
 # begin wxGlade: extracode
 # end wxGlade
@@ -29,6 +30,8 @@ class FuncLog(logging.Handler):
 
     def emit(self, record):
         self.ctrl.AppendText(self.format(record) + "\n")
+
+
 
 
 class MyFrame(wx.Frame):
@@ -89,9 +92,8 @@ class MyFrame(wx.Frame):
         self.ulpir.Bind(wx.EVT_KEY_DOWN, self.onEnter)
         self.button.Bind(wx.EVT_KEY_DOWN, self.onEnter)
 
-        self.notebook_2_pane_2 = wx.Panel(self.notebook_2, -1)
-        self.setupList = ['S1 Craiova', 'S2 Craiova', 'S3 Craiova', 'S4 Craiova', 'S5 Craiova', 'S6 Craiova',
-                          'S7 Craiova', '1+80(R4)', '1+80(Mixed)', '1+28', 'F1', 'F2', 'F3', 'F4', 'F7']
+        self.notebook_2_pane_2 = wx.Panel(self.notebook_2, -1, style=wx.TAB_TRAVERSAL | wx.FULL_REPAINT_ON_RESIZE)
+        self.setupList = ['S6 Craiova','S7 Craiova', '1+96(R4)', 'F2', 'F4', 'F7']
         self.combo_box_setup = wx.ComboBox(self.notebook_2_pane_2, -1, choices=self.setupList,
                                            style=wx.CB_DROPDOWN | wx.CB_DROPDOWN, size=(184, 20))
         self.devicelist = wx.TextCtrl(self.notebook_2_pane_2, pos=(-1, 30), size=(184, 256),
@@ -130,11 +132,11 @@ class MyFrame(wx.Frame):
 
         #wx.ComboBox(self.notebook_2_pane_2, -1, choices=self.setupList, style=wx.CB_DROPDOWN | wx.CB_DROPDOWN,size=(184,20))
         self.labeldlubr = wx.StaticText(self.notebook_2_pane_2, label="DL UBR :", pos=(200, 180))
-        self.valuedlubr = wx.TextCtrl(self.notebook_2_pane_2, value='15', pos=(250, 180), size=(140, -1),
+        self.valuedlubr = wx.TextCtrl(self.notebook_2_pane_2, value='23', pos=(250, 180), size=(140, -1),
                                       style=wx.TE_PROCESS_ENTER | wx.TE_PROCESS_TAB)
         self.checkbox_dlubr = wx.CheckBox(self.notebook_2_pane_2, label="", pos=(400, 180))
         self.labelulubr = wx.StaticText(self.notebook_2_pane_2, label="UL UBR :", pos=(450, 180))
-        self.valueulubr = wx.TextCtrl(self.notebook_2_pane_2, value='15', pos=(500, 180), size=(140, -1),
+        self.valueulubr = wx.TextCtrl(self.notebook_2_pane_2, value='23', pos=(500, 180), size=(140, -1),
                                       style=wx.TE_PROCESS_ENTER | wx.TE_PROCESS_TAB)
         self.checkbox_ulubr = wx.CheckBox(self.notebook_2_pane_2, label="", pos=(650, 180))
         #self.adapt= wx.CheckBox(self.notebook_2_pane_2, label="Adapt_Mod", pos=(200, 120))
@@ -153,10 +155,24 @@ class MyFrame(wx.Frame):
                                    style=wx.TE_PROCESS_ENTER | wx.TE_PROCESS_TAB)
         self.checkbox_pir = wx.CheckBox(self.notebook_2_pane_2, label="", pos=(460, 340))
 
+        self.lblsyslog = wx.StaticText(self.notebook_2_pane_2, label="Syslog:", pos=(500, 340))
+        self.text_syslog = wx.TextCtrl(self.notebook_2_pane_2, value="172.16.0.145", pos=(550, 335), size=(80, -1),
+                                   style=wx.TE_PROCESS_ENTER | wx.TE_PROCESS_TAB)
+        self.checkbox_syslog = wx.CheckBox(self.notebook_2_pane_2, label="", pos=(640, 340))
+
+        self.lblvlan = wx.StaticText(self.notebook_2_pane_2, label="VLAN Filter :", pos=(670, 340))
+        self.text_vlan = wx.TextCtrl(self.notebook_2_pane_2, value="0", pos=(735, 335), size=(50, -1),
+                                   style=wx.TE_PROCESS_ENTER | wx.TE_PROCESS_TAB)
+        self.checkbox_vlan = wx.CheckBox(self.notebook_2_pane_2, label="", pos=(790, 340))
+
         self.button_prov = wx.Button(self.notebook_2_pane_2, label="Create", pos=(200, 400))
         self.button_prov.Bind(wx.EVT_BUTTON, self.Clickbutton_prov)
         self.button_change = wx.Button(self.notebook_2_pane_2, label="Change", pos=(300, 400))
         self.button_change.Bind(wx.EVT_BUTTON, self.Clickbutton_change)
+
+        self.button_report = wx.Button(self.notebook_2_pane_2, label="Report", pos=(400, 400))
+        self.button_report.Bind(wx.EVT_BUTTON, self.Clickbutton_report)
+
 
         self.radio_mode = wx.RadioBox(self.notebook_2_pane_2, -1, ("Radio Mode"), (200, 210),
                                       choices=[_("ON"), ("OFF"), ("None")], majorDimension=3, style=wx.RA_SPECIFY_COLS)
@@ -171,11 +187,26 @@ class MyFrame(wx.Frame):
                                      style=wx.TE_PROCESS_ENTER | wx.TE_PROCESS_TAB)
         self.checkbox_freq = wx.CheckBox(self.notebook_2_pane_2, label="", pos=(420, 270))
 
+        self.labelsw = wx.StaticText(self.notebook_2_pane_2, label="sw version", pos=(500, 400))
+        self.checkbox_sw = wx.CheckBox(self.notebook_2_pane_2, label="", pos=(560, 400))
+
+        self.labelmac = wx.StaticText(self.notebook_2_pane_2, label="mac", pos=(580, 400))
+        self.checkbox_mac = wx.CheckBox(self.notebook_2_pane_2, label="", pos=(610, 400))
+
+        self.lblversion = wx.StaticText(self.notebook_2_pane_2, label="Version : 5.0", pos=(2, 580))
+
+
+
         self.Bind(wx.EVT_CHECKBOX, self.EvtCheckBoxFreq, self.checkbox_freq)
         self.Bind(wx.EVT_CHECKBOX, self.EvtCheckBoxDlUbr, self.checkbox_dlubr)
         self.Bind(wx.EVT_CHECKBOX, self.EvtCheckBoxULUBR, self.checkbox_ulubr)
         self.Bind(wx.EVT_CHECKBOX, self.EvtCheckBoxCir, self.checkbox_cir)
         self.Bind(wx.EVT_CHECKBOX, self.EvtCheckBoxPir, self.checkbox_pir)
+        self.Bind(wx.EVT_CHECKBOX, self.EvtCheckBoxSw, self.checkbox_sw)
+        self.Bind(wx.EVT_CHECKBOX, self.EvtCheckBoxMac, self.checkbox_mac)
+
+        self.Bind(wx.EVT_CHECKBOX, self.EvtCheckBoxSyslog, self.checkbox_syslog)
+        self.Bind(wx.EVT_CHECKBOX, self.EvtCheckBoxVlanFilter, self.checkbox_vlan)
 
 
         #self.radio_mode = wx.RadioButton(self.notebook_2_pane_2, -1, _("radio_mode"))
@@ -206,6 +237,9 @@ class MyFrame(wx.Frame):
         self.valuefreq.Disable()
         self.dlulcir.Disable()
         self.dlulpir.Disable()
+        self.text_vlan.Disable()
+        self.text_syslog.Disable()
+
 
 
         # end wxGlade
@@ -218,7 +252,7 @@ class MyFrame(wx.Frame):
         self.notebook_2.AddPage(self.notebook_2_pane_1, ("Services"))
         self.notebook_2.AddPage(self.notebook_2_pane_2, ("Provisioning"))
         sizer_1.Add(self.notebook_2, 1, wx.EXPAND, 0)
-        self.SetSizer(sizer_1)
+        #self.SetSizer(sizer_1)
         self.Layout()
         # end wxGlade
 
@@ -228,10 +262,12 @@ class MyFrame(wx.Frame):
         if self.radio.IsChecked():
             status_radio = 'on'
         self.logr.info('Starting to apply values....')
-        self.thread = threading.Thread(target=Device.Device().SaveServiceValue, args=(
+        obj_device=Device.Device.SaveServiceValue(str(self.sector.GetValue()), str(self.dlcir.GetValue()), str(self.ulcir.GetValue()), self.radio.IsChecked(),
+            str(self.dlpir.GetValue()), str(self.ulpir.GetValue()))
+        '''self.thread = threading.Thread(target=obj_device.SaveServiceValue, args=(self,
             str(self.sector.GetValue()), str(self.dlcir.GetValue()), str(self.ulcir.GetValue()), self.radio.IsChecked(),
             str(self.dlpir.GetValue()), str(self.ulpir.GetValue())))
-        self.thread.start()
+        self.thread.start()'''
         # result=Device.Device().SaveServiceValue()
         self.logr.info('Finish process')
 
@@ -249,6 +285,8 @@ class MyFrame(wx.Frame):
         adapt = ''
         cir = ''
         pir = ''
+        syslog=''
+        vlanfilter=''
         if self.dlulcir.IsEnabled():
             cir = str(self.dlulcir.GetValue())
             self.logr.info('Set CIR')
@@ -299,6 +337,14 @@ class MyFrame(wx.Frame):
             elif self.chsize.GetSelection() == 9:
                 chsize = 'set chwidth 20'
             self.logr.info('Change channel size')
+        if self.text_vlan.IsEnabled():
+            vlanfilter = str(self.text_vlan.GetValue())
+            vlanfilter = 'set vlanfilter on '+'\n'+'set allowedvlans ' + vlanfilter
+            self.logr.info('Set Vlan Filter')
+        if self.text_syslog.IsEnabled():
+            syslog = str(self.text_syslog.GetValue())
+            syslog = 'set syslogip ' + syslog
+            self.logr.info('Set Syslog ip address:')
 
         if self.adapt.GetSelection() != 2:
             if self.adapt.GetSelection() == 0:
@@ -306,7 +352,8 @@ class MyFrame(wx.Frame):
             else:
                 adapt = 'off '
             self.logr.info('Set modulation type')
-        device = Device.Device(sc, freq, dlubr, ulubr, cp, chsize, radio_mode, adapt, cir, pir)
+
+        device = Device.Device(sc, freq, dlubr, ulubr, cp, chsize, radio_mode, adapt, cir, pir,vlanfilter,syslog)
         return device
 
     def Clickbutton_change(self, event):
@@ -316,7 +363,8 @@ class MyFrame(wx.Frame):
         device = self.getvalues()
         device.ChangeLinksValue(device)
         self.logr.info('Change Links values')
-        for ip in reversed(list):
+        list.pop(0)
+        for ip in list:
             user = 'admin'
             pasw = 'admin'
             if ip.find(',') != -1:
@@ -328,9 +376,66 @@ class MyFrame(wx.Frame):
             self.logr.info('Change Device values' + ip)
             self.threadradio.start()
 
-
+    def Clickbutton_report(self, event):
         # result=Device.Device().SaveServiceValue()
-        self.logr.info('Finish process')
+        self.logr.info('Creating reports....')
+        threads = []
+        items = str(self.devicelist.GetValue())
+        list = items.split('\n')
+        listip = []
+        count = 0
+        queue = Queue.Queue()
+
+        device = self.getvalues()
+        file = open('Report.txt', "w")
+        file.close()
+        dict_mac = {}
+        dict_sw = {}
+        for ip in list:
+            user = 'admin'
+            pasw = 'admin'
+            if ip.find(',') != -1:
+                cred = ip.split(',')
+                user = cred[1]
+                pasw = cred[2]
+                ip = ip[0:ip.find(',')]
+
+            count += 1
+
+            if self.checkbox_mac.GetValue() is True:
+                self.logr.info('Get subscriber mac address for ip '     + ''.join(ip))
+                thread1 = threading.Thread(target=Device.Device.getmacss, args=(ip, user, pasw, queue))
+                threads.append(thread1)
+                thread1.start()
+                #dict_mac.update({ip:queue.get()})
+
+            if self.checkbox_sw.GetValue() is True:
+                self.logr.info('Get subscriber software version for ip '     + ''.join(ip))
+                thread2 = threading.Thread(target=Device.Device.getswversion, args=(ip, user, pasw,queue))
+                threads.append(thread2)
+                thread2.start()
+        while True:
+            item=queue.get(block=True,timeout=10)
+            file=open('Report.txt',"a")
+            file.write(item+'\n')
+            file.close()
+            if item is None:
+                break
+
+
+
+        #dict_sw.update({ip:queue.get()})
+        #dict_sw.update({queue.get()})
+        #file=open('Report.txt',"a")
+        #file.write(queue)
+        '''if len(dict_mac)!=0:
+            for k,v in dict_mac.items():
+                file.write(k+','+v)
+        if len(dict_sw)!=0:
+            for k,v in dict_sw.items():
+                file.write(k+','+v+'\n')'''
+
+
 
 
     def EvtCheckBoxRadio(self, event):
@@ -356,6 +461,21 @@ class MyFrame(wx.Frame):
         else:
             self.valuefreq.Enable()
             self.logr.info('Modify frequency value')
+
+    def EvtCheckBoxSyslog(self, event):
+        if self.checkbox_syslog.GetValue() is False:
+            self.text_syslog.Disable()
+        else:
+            self.text_syslog.Enable()
+            self.logr.info('Modify syslog')
+
+    def EvtCheckBoxVlanFilter(self, event):
+        if self.checkbox_vlan.GetValue() is False:
+            self.text_vlan.Disable()
+        else:
+            self.text_vlan.Enable()
+            self.logr.info('Modify vlan')
+
 
     def EvtCheckBoxDlUbr(self, event):
         if self.checkbox_dlubr.GetValue() is False:
@@ -384,7 +504,10 @@ class MyFrame(wx.Frame):
         else:
             self.dlulpir.Enable()
             self.logr.info('Modify pir value')
-
+    def EvtCheckBoxSw(self, event):
+        pass
+    def EvtCheckBoxMac(self, event):
+        pass
 
     def onEnter(self, event):
         """"""
@@ -444,6 +567,8 @@ class MyFrame(wx.Frame):
                 if st == False:
                     self.logr.info('Telnet session can not be opened ' + ip)
                 sc = ip
+                user_sc=user
+                pasw_sc=pasw
                 count += 1
                 self.logr.info('Recognition of sector controller')
                 continue
@@ -486,21 +611,25 @@ class MyFrame(wx.Frame):
                       'frequency': str(device.freq),
                       'cir': str(device.cir),
                       'pir': str(device.pir),
-                      'user': user,
-                      'pasw': pasw}
-        # MyFrame(None, -1, "Lab Tool", (-1,-1), (600,600))
-        #thread_prov = threading.Thread(target=Provision.Provision().createProv, args=(sc,len(listmac), listmac,listipss,int(self.service.GetValue()),int(self.service.GetValue()),str(self.servicevlan.GetValue()),str(self.servicevlan.GetValue()),str(self.tftp.GetValue())))
+                      'vlanfilter':str(device.vlanfilter),
+                      'syslog':str(device.syslog),
+                      'user': user_sc,
+                      'pasw': pasw_sc}
+
         prov = Provision.Provision
-        '''thread_prov = threading.Thread(target=prov.createProv, args=(sc,len(listmac),listmac,listipss,dict_frame))
-        thread_prov.start()'''
+
         self.logr.info('Create provision ')
+
         try:
             prov_ok = prov.createProv(sc, len(listmac), listmac, listipss, dict_frame)
             if prov_ok == True:
                 device.ChangeLinksValue(device)
+                count=0
+                list.pop(0)
                 for ip in reversed(list):
-                    threadradio = threading.Thread(target=device.ChangeDeviceValue, args=(ip, device, user, pasw))
-                    threadradio.start()
+                    threadss = threading.Thread(target=device.ChangeDeviceValue, args=(ip, device, user, pasw))
+                    threadss.start()
+
                 self.logr.debug('Finish')
         except:
             self.logr.error('The provision can not be created')
