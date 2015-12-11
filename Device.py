@@ -1,12 +1,18 @@
 import re
 import os
 import logging
+import time
+import sys
+from Subscriber import Subscriber
 
 import TelnetController
 
 
 class Device(object):
-    def __init__(self, sc, freq, dlubr, ulubr, cp, chsize, radio_mode, adapt,cir,pir,vlanfilter,syslog):
+    user="admin"
+    pasw="admin"
+    def __init__(self, sc, freq, dlubr, ulubr, cp, chsize, radio_mode, adapt, cir, pir, vlanfilter, syslog,
+                 addtcommands):
         self.sc = sc
         self.freq = freq
         self.dlubr = dlubr
@@ -19,19 +25,52 @@ class Device(object):
         self.pir=pir
         self.vlanfilter=vlanfilter
         self.syslog=syslog
+        self.addtcommands=addtcommands
+
+    @classmethod
+    def parseIp(self,num):
+        Device.user="admin"
+        Device.pasw="admin"
+        if num.find(',') != -1:
+            cred=num.split(',')
+            Device.user=cred[1]
+            Device.pasw=cred[2]
+            num=num[0:num.find(',')]
+        return num
+
+
+    @classmethod
+    def pingdevice(self,num):
+        response = os.system("ping " +self.parseIp(num.rstrip())+ " -n 2")
+        if response != 0:
+            print('Error: Device is not up  '+num+'\n')
+            return False
+        return True
+
+
+    @classmethod
+    def DeviceLogin(self,num):
+        num=self.parseIp(num)
+        Subscriber.ssip=num
+        telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = Device.user, password = Device.pasw, prompt = '#')
+        status_login=telnet.login()
+        if not status_login:
+            print('Error: Unable to start a telnet session on device  '+num+'\n')
+            return False
+        return telnet
+
+    @classmethod
+    def DeviceLogout(self,telnet):
+        telnet.run_command('logout',0)
+
     @classmethod
     def SaveServiceValue(self,sector,dlcir,ulcir,statusradio,dlpir,ulpir):
 
 
 
         num=sector
-        response = os.system("ping " +num.rstrip()+ " -n 1")
-        if response != 0:
-            return False
 
-
-        telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = 'admin', password = 'admin', prompt = '#')
-        telnet.login()
+        telnet=self.DeviceLogin(num.rstrip())
         cmd=''
         list_id=[]
         while len(list_id)<5:
@@ -72,9 +111,8 @@ class Device(object):
         return list_service
 
     @classmethod
-    def getswversion(self,num,user,pasw, out_queue):
-        telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = user, password = pasw, prompt = '#')
-        telnet.login()
+    def getswversion(self,num, out_queue):
+        telnet=self.DeviceLogin(num.rstrip())
         sw=''
         while len(sw)==0:
             sw=telnet.run_command('get swver',1).splitlines()
@@ -86,41 +124,28 @@ class Device(object):
         return sw
 
     @classmethod
-    def getmac(self,num,user,pasw, out_queue):
-        response = os.system("ping " +num.rstrip()+ " -n 2")
-        if response != 0:
-            print('Error: Device is not up  '+num+'\n')
-            out_queue.put('')
-            return
+    def getmac(self,num, out_queue):
+        telnet=self.DeviceLogin(num.rstrip())
+        if telnet is not False:
+            maclist=''
+            while(len(maclist)<11):
+                maclist=telnet.run_command('get mac',1)
+                print maclist
 
-        telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = user, password = pasw, prompt = '#')
-        telnet.login()
-        maclist=''
-        while(len(maclist)<11):
-            maclist=telnet.run_command('get mac',1)
-            print maclist
-
-        #time.sleep(1)
-        startindex=''.join(maclist).rfind('=')
-        endindex=len(''.join(maclist))
-        #mac = ''.join(maclist)[startindex+1:endindex]
-        mac = ''.join(maclist)[startindex+1:endindex]
-        telnet.logout()
-        #out_queue.put(mac.replace(' ', ''))
-        out_queue.put(mac.replace(' ', '')+num.rstrip())
-        print "get mac for ip: "+num
+            #time.sleep(1)
+            startindex=''.join(maclist).rfind('=')
+            endindex=len(''.join(maclist))
+            #mac = ''.join(maclist)[startindex+1:endindex]
+            mac = ''.join(maclist)[startindex+1:endindex]
+            telnet.logout()
+            #out_queue.put(mac.replace(' ', ''))
+            out_queue.put(mac.replace(' ', '')+self.parseIp(num))
+            print "get mac for ip: "+num
         #return mac
 
     @classmethod
-    def getmacss(self,num,user,pasw, out_queue):
-        response = os.system("ping " +num.rstrip()+ " -n 2")
-        if response != 0:
-            print('Error: Device is not up  '+num+'\n')
-            out_queue.put('')
-            return
-
-        telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = user, password = pasw, prompt = '#')
-        telnet.login()
+    def getmacss(self,num, out_queue):
+        telnet=self.DeviceLogin(num.rstrip())
         maclist=''
         while(len(maclist)<11):
             maclist=telnet.run_command('get mac',1)
@@ -137,39 +162,30 @@ class Device(object):
         return mac
 
     def clearid(self,num):
-        telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = 'admin', password = 'admin', prompt = '#')
-        status_login=telnet.login()
-        if not status_login:
-            print('Error: Unable to start a telnet session on device  '+num+'\n')
-            return False
+        telnet=self.DeviceLogin(num.rstrip())
 
-        telnet.run_command('clear idtable',0)
-        telnet.run_command('save config',0)
+        if telnet is not False:
+            telnet.run_command('clear idtable',0)
+            telnet.run_command('save config',0)
+            telnet.run_command('logout',0)
+            telnet.logout()
+        return telnet
 
-
-        telnet.logout()
-        return True
     #ChangeValue, args=(self.radio.IsChecked(),str(self.valuedlubr.GetValue()),str(self.valueulubr.GetValue())
 
     def ChangeLinksValue(self, device):
 
 
         num = device.sc
-        user='admin'
-        pasw='admin'
-        if num.find(',') != -1:
-            cred=num.split(',')
-            user=cred[1]
-            pasw=cred[2]
-            num=num[0:num.find(',')]
-        response = os.system("ping " +num.rstrip()+ " -n 1")
-        if response != 0:
-            return False
-        telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = user, password = pasw, prompt = '#')
-        telnet.login()
         cmd=''
         list_id=[]
         count=0
+
+        self.ChangeDeviceValue(num,device)
+        time.sleep(5)
+        telnet=self.DeviceLogin(num.rstrip())
+
+
         while len(list_id)<5:
             list_id=telnet.run_command('show idtable',1).splitlines()
             '''count+=1
@@ -201,37 +217,13 @@ class Device(object):
             telnet.run_command(cmd+'set radio off'+'\n',0)
             telnet.run_command(cmd+'set radio on'+'\n',0)
             telnet.run_command(cmd+'save config'+'\n',0)
-        #telnet.run_command('logout',0)
-        if device.radio_mode != '':
-            cmd = cmd + ' ' + device.radio_mode + '\r\n'
-        if device.freq != '':
-            cmd = cmd + ' ' + device.freq + '\r\n'
-        if device.cp != '':
-            cmd = cmd + ' ' + device.cp + '\r\n'
-        if device.chsize != '':
-            cmd = cmd + ' ' + device.chsize + '\r\n'
-        if device.vlanfilter != '':
-            cmd = cmd + ' ' + device.vlanfilter + '\r\n'
-        if device.syslog != '':
-            cmd = cmd + ' ' + device.syslog + '\r\n'
-        if device.vlanfilter != '':
-            cmd = cmd + ' ' + device.vlanfilter + '\r\n'
-        if device.radio_mode != '' or device.cp == '' or device.chsize == '':
-            telnet.run_command(cmd+'save config'+'\r\n',0)
         telnet.run_command('logout',0)
+        telnet.logout()
         return True
 
-    def ChangeDeviceValue(self,ip, device,user,pasw):
+    def ChangeDeviceValue(self,ip, device):
         num = ip
-        response = os.system("ping " +ip.rstrip()+ " -n 1")
-        if response != 0:
-            print "Device is not found:"
-            return False
-        telnet = TelnetController.TelnetController(host_name = ip.rstrip(), user_name = user, password = pasw, prompt = '#')
-        st=telnet.login()
-        if st==False:
-            print "Device can not reachable on telnet:"
-            return False
+        telnet=self.DeviceLogin(num.rstrip())
         cmd=''
         if device.radio_mode != '':
             cmd = cmd + ' ' + device.radio_mode + '\r\n'
@@ -247,15 +239,18 @@ class Device(object):
             cmd = cmd + ' ' + device.syslog + '\r\n'
         if device.vlanfilter != '':
             cmd = cmd + ' ' + device.vlanfilter + '\r\n'
-        if device.radio_mode != '' or device.cp == '' or device.chsize == '':
-            telnet.run_command(cmd+'save config'+'\r\n',0)
-        telnet.run_command('logout',0)
+        for i in device.addtcommands:
+            if '#' in cmd:
+                continue
+            cmd=cmd+' '+i+ '\r\n'
+        if telnet is not False:
+            telnet.run_command(cmd+' save config'+'\r\n',0)
+            telnet.run_command('logout',0)
 
 
 
     def getip(self,num, out_queue):
-        telnet = TelnetController.TelnetController(host_name = num.rstrip(), user_name = 'admin', password = 'admin', prompt = '#')
-        telnet.login()
+        telnet=self.DeviceLogin(num.rstrip())
         iplist=telnet.run_command('set ipaddr',1).splitlines()
         startindex=''.join(iplist).rfind('=')
         endindex=len(''.join(iplist))
@@ -263,13 +258,16 @@ class Device(object):
         telnet.logout()
         out_queue.put(ip)
         return ip
-    def setCredentials(self,ip):
-            user='admin'
-            pasw='admin'
-            if ip.find(',') != -1:
-                cred=ip.split(',')
-                user=cred[1]
-                pasw=cred[2]
-                ip=ip[0:ip.find(',')]
-            return ip
-    
+
+    @classmethod
+    def upgrade(self,num,tftpip,filename):
+        telnet=self.DeviceLogin(num.rstrip())
+        telnet.run_command('upgrade '+tftpip+' '+filename,0)
+        telnet.logout()
+
+    @classmethod
+    def changeversion(self,num):
+
+        telnet=self.DeviceLogin(num.rstrip())
+        telnet.run_command('chgver',0)
+        telnet.logout()
