@@ -130,6 +130,13 @@ class MyFrame(wx.Frame):
                                        style=wx.TE_PROCESS_ENTER | wx.TE_PROCESS_TAB)
 
 
+        self.lblcommands=wx.StaticText(self.notebook_2_pane_2, label="Additional telnet commands :", pos=(650, 20))
+        self.addtcommands = wx.TextCtrl(self.notebook_2_pane_2, pos=(640, 40), size=(200, 100),value="#set sysname RDL",
+                              style=wx.TE_MULTILINE | wx.HSCROLL)
+
+
+
+
         #wx.ComboBox(self.notebook_2_pane_2, -1, choices=self.setupList, style=wx.CB_DROPDOWN | wx.CB_DROPDOWN,size=(184,20))
         self.labeldlubr = wx.StaticText(self.notebook_2_pane_2, label="DL UBR :", pos=(200, 180))
         self.valuedlubr = wx.TextCtrl(self.notebook_2_pane_2, value='23', pos=(250, 180), size=(140, -1),
@@ -173,6 +180,15 @@ class MyFrame(wx.Frame):
         self.button_report = wx.Button(self.notebook_2_pane_2, label="Report", pos=(400, 400))
         self.button_report.Bind(wx.EVT_BUTTON, self.Clickbutton_report)
 
+        self.button_upgrade = wx.Button(self.notebook_2_pane_2, label="Upgrade", pos=(400, 450))
+        self.button_upgrade.Bind(wx.EVT_BUTTON, self.Clickbutton_upgrade)
+        self.text_upgrade = wx.TextCtrl(self.notebook_2_pane_2, value="RDL3KR4_0300_035.sbin", pos=(200, 450), size=(150, -1),
+                           style=wx.TE_PROCESS_ENTER | wx.TE_PROCESS_TAB)
+
+        self.button_chgver = wx.Button(self.notebook_2_pane_2, label="ChangeVersion", pos=(500, 450))
+        self.button_chgver.Bind(wx.EVT_BUTTON, self.Clickbutton_chgver)
+
+
 
         self.radio_mode = wx.RadioBox(self.notebook_2_pane_2, -1, ("Radio Mode"), (200, 210),
                                       choices=[_("ON"), ("OFF"), ("None")], majorDimension=3, style=wx.RA_SPECIFY_COLS)
@@ -193,7 +209,7 @@ class MyFrame(wx.Frame):
         self.labelmac = wx.StaticText(self.notebook_2_pane_2, label="mac", pos=(580, 400))
         self.checkbox_mac = wx.CheckBox(self.notebook_2_pane_2, label="", pos=(610, 400))
 
-        self.lblversion = wx.StaticText(self.notebook_2_pane_2, label="Version : 5.0", pos=(2, 580))
+        self.lblversion = wx.StaticText(self.notebook_2_pane_2, label="Version : 5.2", pos=(2, 580))
 
 
 
@@ -216,6 +232,10 @@ class MyFrame(wx.Frame):
 
         self.__set_properties()
         self.__do_layout()
+        self.threads=[]
+        file = open('Logger_Telnet.txt', "w")
+        file.close()
+
         # end wxGlade
 
     def __set_properties(self):
@@ -264,11 +284,6 @@ class MyFrame(wx.Frame):
         self.logr.info('Starting to apply values....')
         obj_device=Device.Device.SaveServiceValue(str(self.sector.GetValue()), str(self.dlcir.GetValue()), str(self.ulcir.GetValue()), self.radio.IsChecked(),
             str(self.dlpir.GetValue()), str(self.ulpir.GetValue()))
-        '''self.thread = threading.Thread(target=obj_device.SaveServiceValue, args=(self,
-            str(self.sector.GetValue()), str(self.dlcir.GetValue()), str(self.ulcir.GetValue()), self.radio.IsChecked(),
-            str(self.dlpir.GetValue()), str(self.ulpir.GetValue())))
-        self.thread.start()'''
-        # result=Device.Device().SaveServiceValue()
         self.logr.info('Finish process')
 
     def getvalues(self):
@@ -286,6 +301,7 @@ class MyFrame(wx.Frame):
         cir = ''
         pir = ''
         syslog=''
+        upgrade_value=''
         vlanfilter=''
         if self.dlulcir.IsEnabled():
             cir = str(self.dlulcir.GetValue())
@@ -341,6 +357,9 @@ class MyFrame(wx.Frame):
             vlanfilter = str(self.text_vlan.GetValue())
             vlanfilter = 'set vlanfilter on '+'\n'+'set allowedvlans ' + vlanfilter
             self.logr.info('Set Vlan Filter')
+        else:
+            vlanfilter = 'set vlanfilter off '+'\n'
+            self.logr.info('Set Vlan Filter')
         if self.text_syslog.IsEnabled():
             syslog = str(self.text_syslog.GetValue())
             syslog = 'set syslogip ' + syslog
@@ -352,8 +371,11 @@ class MyFrame(wx.Frame):
             else:
                 adapt = 'off '
             self.logr.info('Set modulation type')
+        items = str(self.addtcommands.GetValue())
+        listcommands = items.split('\n')
 
-        device = Device.Device(sc, freq, dlubr, ulubr, cp, chsize, radio_mode, adapt, cir, pir,vlanfilter,syslog)
+
+        device = Device.Device(sc, freq, dlubr, ulubr, cp, chsize, radio_mode, adapt, cir, pir, vlanfilter, syslog,listcommands)
         return device
 
     def Clickbutton_change(self, event):
@@ -361,29 +383,40 @@ class MyFrame(wx.Frame):
         list = items.split('\n')
         sc = ''.join(list[0])
         device = self.getvalues()
-        device.ChangeLinksValue(device)
-        self.logr.info('Change Links values')
-        list.pop(0)
-        for ip in list:
-            user = 'admin'
-            pasw = 'admin'
-            if ip.find(',') != -1:
-                cred = ip.split(',')
-                user = cred[1]
-                pasw = cred[2]
-                ip = ip[0:ip.find(',')]
-            self.threadradio = threading.Thread(target=device.ChangeDeviceValue, args=(ip, device, user, pasw))
-            self.logr.info('Change Device values' + ip)
-            self.threadradio.start()
+        #apply only SC
+        if self.adapt.GetStringSelection()!="None" or self.checkbox_cir.GetValue() or self.checkbox_pir.GetValue() or self.checkbox_dlubr.GetValue() or self.checkbox_ulubr.GetValue():
+            if Device.Device.pingdevice(sc) is not False:
+                self.threadradio = threading.Thread(target=device.ChangeLinksValue, args=(device,))
+                self.threads.append(self.threadradio)
+                self.threadradio.start()
+                self.logr.info('Change Links values')
+            list.pop(0)
+            for ip in list:
+                #apply all device
+                self.threadradio = threading.Thread(target=device.ChangeDeviceValue, args=(ip, device))
+                self.logr.info('Change Device values' + ip)
+                self.threads.append(self.threadradio)
+                self.threadradio.start()
+                #self.threadradio.join()
+        else:
+            for ip in list:
+                #apply all device
+                self.threadradio = threading.Thread(target=device.ChangeDeviceValue, args=(ip, device))
+                self.logr.info('Change Device values' + ip)
+                self.threads.append(self.threadradio)
+                self.threadradio.start()
+                #self.threadradio.join()
+
+
 
     def Clickbutton_report(self, event):
+        #self.threadradio
+        
         # result=Device.Device().SaveServiceValue()
         self.logr.info('Creating reports....')
-        threads = []
         items = str(self.devicelist.GetValue())
         list = items.split('\n')
         listip = []
-        count = 0
         queue = Queue.Queue()
 
         device = self.getvalues()
@@ -392,27 +425,17 @@ class MyFrame(wx.Frame):
         dict_mac = {}
         dict_sw = {}
         for ip in list:
-            user = 'admin'
-            pasw = 'admin'
-            if ip.find(',') != -1:
-                cred = ip.split(',')
-                user = cred[1]
-                pasw = cred[2]
-                ip = ip[0:ip.find(',')]
-
-            count += 1
-
             if self.checkbox_mac.GetValue() is True:
                 self.logr.info('Get subscriber mac address for ip '     + ''.join(ip))
-                thread1 = threading.Thread(target=Device.Device.getmacss, args=(ip, user, pasw, queue))
-                threads.append(thread1)
+                thread1 = threading.Thread(target=Device.Device.getmacss, args=(ip, queue))
+                self.threads.append(thread1)
                 thread1.start()
                 #dict_mac.update({ip:queue.get()})
 
             if self.checkbox_sw.GetValue() is True:
                 self.logr.info('Get subscriber software version for ip '     + ''.join(ip))
-                thread2 = threading.Thread(target=Device.Device.getswversion, args=(ip, user, pasw,queue))
-                threads.append(thread2)
+                thread2 = threading.Thread(target=Device.Device.getswversion, args=(ip,queue))
+                self.threads.append(thread2)
                 thread2.start()
         while True:
             item=queue.get(block=True,timeout=10)
@@ -434,6 +457,32 @@ class MyFrame(wx.Frame):
         if len(dict_sw)!=0:
             for k,v in dict_sw.items():
                 file.write(k+','+v+'\n')'''
+
+    def Clickbutton_upgrade(self, event):
+        self.logr.info('Upgrading devices....')
+        items = str(self.devicelist.GetValue())
+
+        list = items.split('\n')
+        count = 0
+        queue = Queue.Queue()
+        for ip in list:
+            self.logr.info('Upgrade device with ip '     + ''.join(ip))
+            thread1 = threading.Thread(target=Device.Device.upgrade, args=(ip,str(self.tftp.GetValue()),str(self.text_upgrade.GetValue())))
+            self.threads.append(thread1)
+            thread1.start()
+
+    def Clickbutton_chgver(self, event):
+        self.logr.info('Change software version................................')
+        items = str(self.devicelist.GetValue())
+        list = items.split('\n')
+        count = 0
+        queue = Queue.Queue()
+
+        for ip in list:
+            self.logr.info('Change software version for device with ip '     + ''.join(ip))
+            thread1 = threading.Thread(target=Device.Device.changeversion, args=(ip,))
+            self.threads.append(thread1)
+            thread1.start()
 
 
 
@@ -543,59 +592,52 @@ class MyFrame(wx.Frame):
 
     def Clickbutton_prov(self, event):
         self.logr.info('Starting to apply values....')
-        threads = []
         listmac = []
         items = str(self.devicelist.GetValue())
         list = items.split('\n')
         listipss = []
+        ipup=[]
         count = 0
         queue = Queue.Queue()
 
         device = self.getvalues()
 
         for ip in list:
-            user = 'admin'
-            pasw = 'admin'
-            if ip.find(',') != -1:
-                cred = ip.split(',')
-                user = cred[1]
-                pasw = cred[2]
-                ip = ip[0:ip.find(',')]
             if count == 0:
-                # swver=Device.Device().getswversion(ip)
-                st = device.clearid(ip)
-                if st == False:
-                    self.logr.info('Telnet session can not be opened ' + ip)
-                sc = ip
-                user_sc=user
-                pasw_sc=pasw
-                count += 1
-                self.logr.info('Recognition of sector controller')
-                continue
+                if Device.Device.pingdevice(ip) is not False:
+                    st = device.clearid(ip)
+                    if st == False:
+                        self.logr.info('Telnet session can not be opened ' + ip)
+                        break
+                    sc = ip
+                    count += 1
+                    self.logr.info('Recognition of sector controller')
+                    continue
             else:
-
                 count += 1
-                self.logr.info('Get subscriber mac address for ip ' + ''.join(ip))
-
-                thread1 = threading.Thread(target=Device.Device.getmac, args=(ip, user, pasw, queue))
-                threads.append(thread1)
-                # thread1.setDaemon(True)
+                thread1 = threading.Thread(target=Device.Device.getmac, args=(ip, queue))
+                self.threads.append(thread1)
                 thread1.start()
-                # thread1.join()
-                #thread2 = threading.Thread(target=Device.Device().getip, args=(ip, queue_ip))
-                #thread2.start()
-        for ip in range(1, len(list), 1):
-            macip = queue.get()
-            if macip == '':
-                self.logr.info('Telnet session on device  ' + list[ip] + ' is slow. Maybe device needs a reboot.')
-            else:
-                macip = macip.replace('\n', '')
-                if len(macip) > 18:
-                    mac = macip[0:17]
-                    ip = macip[17:len(macip)]
+                ipup.append(ip)
+                self.logr.info('Get subscriber mac address for ip ' + ''.join(ip))
+                #thread1.join()
+        for x in self.threads:
+            x.join()
+        list.pop(0)
+        sizeq=queue.qsize()
+        for ip in range(0, sizeq+1, 1):
+            if queue.empty() is False:
+                macip = queue.get()
+                if macip == '':
+                    self.logr.info('Telnet session on device  ' + list[ip] + ' is slow. Maybe device needs a reboot.')
+                else:
+                    macip = macip.replace('\n', '')
+                    if len(macip) > 18:
+                        mac = macip[0:17]
+                        ip = macip[17:len(macip)]
 
-                    listmac.append(mac)
-                    listipss.append(ip)
+                        listmac.append(mac)
+                        listipss.append(ip)
 
         self.logr.info('Create elements...')
         # dict = {'Name': 'Zara', 'Age': 7, 'Class': 'First'};
@@ -612,9 +654,7 @@ class MyFrame(wx.Frame):
                       'cir': str(device.cir),
                       'pir': str(device.pir),
                       'vlanfilter':str(device.vlanfilter),
-                      'syslog':str(device.syslog),
-                      'user': user_sc,
-                      'pasw': pasw_sc}
+                      'syslog':str(device.syslog)}
 
         prov = Provision.Provision
 
@@ -623,13 +663,12 @@ class MyFrame(wx.Frame):
         try:
             prov_ok = prov.createProv(sc, len(listmac), listmac, listipss, dict_frame)
             if prov_ok == True:
-                device.ChangeLinksValue(device)
-                count=0
-                list.pop(0)
-                for ip in reversed(list):
-                    threadss = threading.Thread(target=device.ChangeDeviceValue, args=(ip, device, user, pasw))
-                    threadss.start()
-
+                #device.ChangeLinksValue(device)
+                for ip in reversed(ipup):
+                    t = threading.Thread(target=device.ChangeDeviceValue, args=(ip, device))
+                    self.threads.append(t)
+                    t.start()
+                    #self.threads.join()
                 self.logr.debug('Finish')
         except:
             self.logr.error('The provision can not be created')
